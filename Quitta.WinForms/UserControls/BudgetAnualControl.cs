@@ -1,0 +1,236 @@
+﻿using Quitta.Models;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Quitta.UserControls
+{
+    public partial class BudgetAnualControl : UserControl
+    {
+        private List<Item> items = new();
+        private List<MonthlyBudget> budgets = new();
+
+        // raised when budgets are modified so parent can persist and refresh other views
+        public event Action BudgetsChanged;
+
+        public BudgetAnualControl()
+        {
+            InitializeComponent();
+            // Visual configuration moved to designer.
+        }
+
+        public void SetData(List<Item> items, List<MonthlyBudget> budgets)
+        {
+            this.items = items ?? new List<Item>();
+            this.budgets = budgets ?? new List<MonthlyBudget>();
+            PopulateBudget();
+        }
+
+        private void PopulateBudget()
+        {
+            var budgetRows = new List<BudgetMonthRow>();
+
+            for (int i = 0; i < 12; i++)
+            {
+                var monthDate = DateTime.Now.AddMonths(i);
+                var monthKey = monthDate.ToString("yyyy-MM");
+                var monthName = monthDate.ToString("MMMM 'de' yyyy");
+
+                var budget = budgets.FirstOrDefault(b => b.Month == monthKey)?.Budget ?? 0;
+                var paid = items
+                    .Where(item => item.Status == StatusItem.Pago &&
+                                  item.Vencimento.ToString("yyyy-MM") == monthKey)
+                    .Sum(item => item.Valor);
+                var pending = items
+                    .Where(item => item.Status != StatusItem.Pago &&
+                                  item.Vencimento.ToString("yyyy-MM") == monthKey)
+                    .Sum(item => item.Valor);
+                var balance = budget - paid;
+
+                string status = "Sem budget";
+                if (budget > 0)
+                {
+                    var percentage = (paid / budget) * 100;
+                    if (percentage <= 80) status = "Saudável";
+                    else if (percentage <= 100) status = "Atenção";
+                    else status = "Excedido";
+                }
+
+                budgetRows.Add(new BudgetMonthRow
+                {
+                    Month = monthKey,
+                    MesAno = char.ToUpper(monthName[0]) + monthName.Substring(1),
+                    BudgetPlanejado = budget,
+                    TotalPago = paid,
+                    Pendente = pending,
+                    Saldo = balance,
+                    StatusDisplay = status
+                });
+            }
+
+            // bind
+            // prevent auto-generation so extra properties (Month) don't create a visible column
+            dgvBudgetMensal.AutoGenerateColumns = false;
+            dgvBudgetMensal.DataSource = null;
+            dgvBudgetMensal.DataSource = budgetRows;
+
+            //Atualizar cards
+            var totalBudget = budgetRows.Sum(b => b.BudgetPlanejado);
+            var totalPaid = budgetRows.Sum(b => b.TotalPago);
+            var totalBalance = totalBudget - totalPaid;
+
+            lblValorBudgetTotal.Text = totalBudget.ToString("C2");
+            lblValorPagoAnual.Text = totalPaid.ToString("C2");
+            lblValorSaldoAnual.Text = totalBalance.ToString("C2");
+
+            // ensure actions column exists (defined in designer) and remove any unnamed edit column if present
+            if (dgvBudgetMensal.Columns.Contains("btnEdit"))
+            {
+                dgvBudgetMensal.Columns.Remove("btnEdit");
+            }
+
+            // lock resizing and make columns non-resizable
+            foreach (DataGridViewColumn c in dgvBudgetMensal.Columns)
+            {
+                c.Resizable = DataGridViewTriState.False;
+            }
+
+            // small visual adjustments to specific columns if present
+            if (dgvBudgetMensal.Columns["MesAno"] != null) dgvBudgetMensal.Columns["MesAno"].HeaderText = "Mês";
+            if (dgvBudgetMensal.Columns["BudgetPlanejado"] != null) dgvBudgetMensal.Columns["BudgetPlanejado"].HeaderText = "Budget Planejado";
+            if (dgvBudgetMensal.Columns["TotalPago"] != null) dgvBudgetMensal.Columns["TotalPago"].HeaderText = "Total Pago";
+            if (dgvBudgetMensal.Columns["Pendente"] != null) dgvBudgetMensal.Columns["Pendente"].HeaderText = "Pendente";
+            if (dgvBudgetMensal.Columns["Saldo"] != null) dgvBudgetMensal.Columns["Saldo"].HeaderText = "Saldo";
+            if (dgvBudgetMensal.Columns["StatusDisplay"] != null) dgvBudgetMensal.Columns["StatusDisplay"].HeaderText = "Status";
+
+            dgvBudgetMensal.Refresh();
+        }
+
+        private void DgvBudgetMensal_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex >= 0 && e.RowIndex >= 0 && dgvBudgetMensal.Columns.Count > e.ColumnIndex)
+            {
+                var col = dgvBudgetMensal.Columns[e.ColumnIndex];
+                // handle click on actions button column
+                if (col.Name == "Acoes")
+                {
+                    var row = (BudgetMonthRow)dgvBudgetMensal.Rows[e.RowIndex].DataBoundItem;
+                    ShowEditBudgetDialog(row.Month, row.BudgetPlanejado);
+                }
+            }
+        }
+
+        private void DgvBudgetMensal_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (dgvBudgetMensal.Rows.Count == 0) return;
+
+            var col = dgvBudgetMensal.Columns[e.ColumnIndex];
+            var row = dgvBudgetMensal.Rows[e.RowIndex];
+            if (row.DataBoundItem is not BudgetMonthRow data) return;
+
+            // Format BudgetPlanejado: show "Não definido" when zero
+            if (col.DataPropertyName == "BudgetPlanejado")
+            {
+                if (data.BudgetPlanejado == 0)
+                {
+                    e.Value = "Não definido";
+                    e.CellStyle.ForeColor = Color.Gray;
+                    e.FormattingApplied = true;
+                }
+                else
+                {
+                    e.Value = data.BudgetPlanejado.ToString("C2");
+                    e.CellStyle.ForeColor = Color.Black;
+                    e.FormattingApplied = true;
+                }
+            }
+
+            // Format TotalPago, Pendente, Saldo as currency when numeric
+            if (col.DataPropertyName == "TotalPago" || col.DataPropertyName == "Pendente" || col.DataPropertyName == "Saldo")
+            {
+                decimal val = 0;
+                if (col.DataPropertyName == "TotalPago") val = data.TotalPago;
+                if (col.DataPropertyName == "Pendente") val = data.Pendente;
+                if (col.DataPropertyName == "Saldo") val = data.Saldo;
+
+                e.Value = val.ToString("C2");
+                e.FormattingApplied = true;
+
+                if (col.DataPropertyName == "Pendente" && val > 0)
+                {
+                    e.CellStyle.ForeColor = Color.OrangeRed;
+                }
+                if (col.DataPropertyName == "Saldo")
+                {
+                    e.CellStyle.ForeColor = val >= 0 ? Color.FromArgb(6, 120, 60) : Color.FromArgb(153, 27, 27);
+                }
+            }
+
+            // Status column: render as badge-like text color
+            if (col.DataPropertyName == "StatusDisplay")
+            {
+                if (data.StatusDisplay == "Saudável")
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(6, 120, 60);
+                }
+                else if (data.StatusDisplay == "Atenção")
+                {
+                    e.CellStyle.ForeColor = Color.OrangeRed;
+                }
+                else if (data.StatusDisplay == "Excedido")
+                {
+                    e.CellStyle.ForeColor = Color.DarkRed;
+                }
+                else
+                {
+                    e.CellStyle.ForeColor = Color.Gray;
+                }
+                e.Value = data.StatusDisplay;
+                e.FormattingApplied = true;
+            }
+
+            // Month column text left aligned
+            if (col.DataPropertyName == "MesAno")
+            {
+                e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            }
+        }
+
+        private void ShowEditBudgetDialog(string month, decimal currentBudget)
+        {
+            var input = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Digite o valor do budget para {month}:",
+                "Editar Budget",
+                currentBudget.ToString()
+            );
+
+            if (!string.IsNullOrEmpty(input))
+            {
+                if (decimal.TryParse(input, out decimal newBudget))
+                {
+                    var existing = budgets.FirstOrDefault(b => b.Month == month);
+                    if (existing != null)
+                        existing.Budget = newBudget;
+                    else
+                        budgets.Add(new MonthlyBudget { Month = month, Budget = newBudget });
+
+                    // notify parent to persist and refresh where necessary
+                    BudgetsChanged?.Invoke();
+
+                    // refresh view
+                    PopulateBudget();
+                }
+                else
+                {
+                    MessageBox.Show("Valor inválido.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+    }
+}
