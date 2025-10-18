@@ -43,17 +43,21 @@
             dtpVencimento = new DateTimePicker();
             lblStatus = new Label();
             cmbStatus = new ComboBox();
-            btnCadastrar = new Button();
-            btnLimpar = new Button();
             btnAnexar = new Button();
             lstAnexos = new ListBox();
             groupBoxUpload = new GroupBox();
+            btnOpenAttachment = new Button();
+            btnDeleteAttachment = new Button();
             btnUpload = new Button();
             lblUploadInfo = new Label();
             lblExtracaoDev = new Label();
+            btnLimpar = new Button();
+            btnCadastrar = new Button();
+            panelButtons = new Panel();
             groupBoxForm.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numValor).BeginInit();
             groupBoxUpload.SuspendLayout();
+            panelButtons.SuspendLayout();
             SuspendLayout();
             // 
             // lblCadastroTitulo
@@ -68,6 +72,8 @@
             // 
             // groupBoxForm
             // 
+            groupBoxForm.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            groupBoxForm.Controls.Add(panelButtons);
             groupBoxForm.Controls.Add(rbBoleto);
             groupBoxForm.Controls.Add(rbNota);
             groupBoxForm.Controls.Add(lblTipo);
@@ -81,21 +87,20 @@
             groupBoxForm.Controls.Add(dtpVencimento);
             groupBoxForm.Controls.Add(lblStatus);
             groupBoxForm.Controls.Add(cmbStatus);
-            groupBoxForm.Controls.Add(btnCadastrar);
-            groupBoxForm.Controls.Add(btnLimpar);
             groupBoxForm.Location = new Point(20, 70);
             groupBoxForm.Name = "groupBoxForm";
-            groupBoxForm.Size = new Size(760, 510);
+            groupBoxForm.Size = new Size(760, 760);
             groupBoxForm.TabIndex = 1;
             groupBoxForm.TabStop = false;
             groupBoxForm.Text = "Dados do Boleto/Nota";
             // 
             // rbBoleto
             // 
+            rbBoleto.AutoSize = true;
             rbBoleto.Checked = true;
-            rbBoleto.Location = new Point(20, 55);
+            rbBoleto.Location = new Point(20, 60);
             rbBoleto.Name = "rbBoleto";
-            rbBoleto.Size = new Size(104, 24);
+            rbBoleto.Size = new Size(74, 24);
             rbBoleto.TabIndex = 1;
             rbBoleto.TabStop = true;
             rbBoleto.Text = "Boleto";
@@ -103,9 +108,10 @@
             // 
             // rbNota
             // 
-            rbNota.Location = new Point(140, 55);
+            rbNota.AutoSize = true;
+            rbNota.Location = new Point(140, 60);
             rbNota.Name = "rbNota";
-            rbNota.Size = new Size(120, 24);
+            rbNota.Size = new Size(103, 24);
             rbNota.TabIndex = 2;
             rbNota.Text = "Nota Fiscal";
             rbNota.UseVisualStyleBackColor = true;
@@ -209,29 +215,6 @@
             cmbStatus.Size = new Size(200, 28);
             cmbStatus.TabIndex = 12;
             // 
-            // btnCadastrar
-            // 
-            btnCadastrar.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            btnCadastrar.BackColor = Color.FromArgb(3, 2, 19);
-            btnCadastrar.FlatStyle = FlatStyle.Flat;
-            btnCadastrar.ForeColor = Color.White;
-            btnCadastrar.Location = new Point(20, 410);
-            btnCadastrar.Name = "btnCadastrar";
-            btnCadastrar.Size = new Size(300, 40);
-            btnCadastrar.TabIndex = 13;
-            btnCadastrar.Text = "Cadastrar";
-            btnCadastrar.UseVisualStyleBackColor = false;
-            // 
-            // btnLimpar
-            // 
-            btnLimpar.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            btnLimpar.FlatStyle = FlatStyle.Flat;
-            btnLimpar.Location = new Point(340, 410);
-            btnLimpar.Name = "btnLimpar";
-            btnLimpar.Size = new Size(200, 40);
-            btnLimpar.TabIndex = 14;
-            btnLimpar.Text = "Limpar Formulário";
-            // 
             // btnAnexar
             // 
             btnAnexar.Location = new Point(0, 0);
@@ -241,24 +224,50 @@
             // 
             // lstAnexos
             // 
-            lstAnexos.Location = new Point(20, 140);
+            lstAnexos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lstAnexos.BorderStyle = BorderStyle.FixedSingle;
+            lstAnexos.Location = new Point(20, 160);
             lstAnexos.Name = "lstAnexos";
-            lstAnexos.Size = new Size(480, 340);
+            lstAnexos.Size = new Size(520, 322);
             lstAnexos.TabIndex = 3;
-            lstAnexos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             // 
             // groupBoxUpload
             // 
+            groupBoxUpload.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            groupBoxUpload.Controls.Add(btnOpenAttachment);
+            groupBoxUpload.Controls.Add(btnDeleteAttachment);
             groupBoxUpload.Controls.Add(btnUpload);
             groupBoxUpload.Controls.Add(lblUploadInfo);
             groupBoxUpload.Controls.Add(lstAnexos);
             groupBoxUpload.Controls.Add(lblExtracaoDev);
             groupBoxUpload.Location = new Point(800, 70);
             groupBoxUpload.Name = "groupBoxUpload";
-            groupBoxUpload.Size = new Size(520, 510);
+            groupBoxUpload.Size = new Size(560, 760);
             groupBoxUpload.TabIndex = 2;
             groupBoxUpload.TabStop = false;
             groupBoxUpload.Text = "Upload de Boleto/Nota (Extração Automática)";
+            // 
+            // btnOpenAttachment
+            // 
+            btnOpenAttachment.Anchor = AnchorStyles.Bottom;
+            btnOpenAttachment.FlatStyle = FlatStyle.System;
+            btnOpenAttachment.Location = new Point(110, 520);
+            btnOpenAttachment.Name = "btnOpenAttachment";
+            btnOpenAttachment.Size = new Size(140, 36);
+            btnOpenAttachment.TabIndex = 5;
+            btnOpenAttachment.Text = "Abrir Anexo";
+            btnOpenAttachment.UseVisualStyleBackColor = true;
+            // 
+            // btnDeleteAttachment
+            // 
+            btnDeleteAttachment.Anchor = AnchorStyles.Bottom;
+            btnDeleteAttachment.FlatStyle = FlatStyle.System;
+            btnDeleteAttachment.Location = new Point(310, 520);
+            btnDeleteAttachment.Name = "btnDeleteAttachment";
+            btnDeleteAttachment.Size = new Size(140, 36);
+            btnDeleteAttachment.TabIndex = 6;
+            btnDeleteAttachment.Text = "Excluir Anexo";
+            btnDeleteAttachment.UseVisualStyleBackColor = true;
             // 
             // btnUpload
             // 
@@ -266,32 +275,66 @@
             btnUpload.FlatStyle = FlatStyle.Flat;
             btnUpload.Location = new Point(20, 40);
             btnUpload.Name = "btnUpload";
-            btnUpload.Size = new Size(480, 48);
+            btnUpload.Size = new Size(520, 48);
             btnUpload.TabIndex = 0;
             btnUpload.Text = "Selecionar Arquivo...";
             btnUpload.Click += BtnAnexar_Click;
             // 
             // lblUploadInfo
             // 
-            lblUploadInfo.AutoSize = true;
+            lblUploadInfo.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblUploadInfo.Location = new Point(20, 100);
             lblUploadInfo.Name = "lblUploadInfo";
-            lblUploadInfo.Size = new Size(300, 20);
+            lblUploadInfo.RightToLeft = RightToLeft.No;
+            lblUploadInfo.Size = new Size(520, 48);
             lblUploadInfo.TabIndex = 1;
             lblUploadInfo.Text = "(Opcional) Selecione um arquivo PDF ou imagem do boleto/nota para anexar.";
-            lblUploadInfo.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            lblUploadInfo.TextAlign = ContentAlignment.MiddleLeft;
+            lblUploadInfo.UseMnemonic = false;
             // 
             // lblExtracaoDev
             // 
+            lblExtracaoDev.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblExtracaoDev.AutoSize = true;
             lblExtracaoDev.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
             lblExtracaoDev.ForeColor = Color.Gray;
-            lblExtracaoDev.Location = new Point(20, 490);
+            lblExtracaoDev.Location = new Point(20, 720);
             lblExtracaoDev.Name = "lblExtracaoDev";
-            lblExtracaoDev.Size = new Size(300, 20);
+            lblExtracaoDev.Size = new Size(282, 19);
             lblExtracaoDev.TabIndex = 4;
             lblExtracaoDev.Text = "(Extração automática: Em desenvolvimento)";
-            lblExtracaoDev.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            // 
+            // btnLimpar
+            // 
+            btnLimpar.FlatStyle = FlatStyle.Flat;
+            btnLimpar.Location = new Point(330, 12);
+            btnLimpar.Name = "btnLimpar";
+            btnLimpar.Size = new Size(200, 40);
+            btnLimpar.TabIndex = 14;
+            btnLimpar.Text = "Limpar Formulário";
+            // 
+            // btnCadastrar
+            // 
+            btnCadastrar.BackColor = Color.FromArgb(3, 2, 19);
+            btnCadastrar.FlatStyle = FlatStyle.Flat;
+            btnCadastrar.ForeColor = Color.White;
+            btnCadastrar.Location = new Point(10, 12);
+            btnCadastrar.Name = "btnCadastrar";
+            btnCadastrar.Size = new Size(300, 40);
+            btnCadastrar.TabIndex = 13;
+            btnCadastrar.Text = "Cadastrar";
+            btnCadastrar.UseVisualStyleBackColor = false;
+            // 
+            // panelButtons
+            // 
+            panelButtons.Controls.Add(btnCadastrar);
+            panelButtons.Controls.Add(btnLimpar);
+            panelButtons.Dock = DockStyle.Bottom;
+            panelButtons.Location = new Point(3, 685);
+            panelButtons.Name = "panelButtons";
+            panelButtons.Padding = new Padding(10);
+            panelButtons.Size = new Size(754, 72);
+            panelButtons.TabIndex = 20;
             // 
             // CadastrarControl
             // 
@@ -299,12 +342,13 @@
             Controls.Add(groupBoxForm);
             Controls.Add(lblCadastroTitulo);
             Name = "CadastrarControl";
-            Size = new Size(1368, 820);
+            Size = new Size(1400, 900);
             groupBoxForm.ResumeLayout(false);
             groupBoxForm.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numValor).EndInit();
             groupBoxUpload.ResumeLayout(false);
             groupBoxUpload.PerformLayout();
+            panelButtons.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -326,13 +370,16 @@
         private DateTimePicker dtpVencimento;
         private Label lblStatus;
         private ComboBox cmbStatus;
-        private Button btnCadastrar;
-        private Button btnLimpar;
         private Button btnAnexar;
         private ListBox lstAnexos;
         private GroupBox groupBoxUpload;
         private Button btnUpload;
         private Label lblUploadInfo;
         private Label lblExtracaoDev;
+        private Button btnOpenAttachment;
+        private Button btnDeleteAttachment;
+        private Panel panelButtons;
+        private Button btnCadastrar;
+        private Button btnLimpar;
     }
 }

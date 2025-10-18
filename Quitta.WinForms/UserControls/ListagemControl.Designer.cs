@@ -44,13 +44,6 @@
             btnFiltrar = new Button();
             btnLimparFiltros = new Button();
             dgvListagem = new DataGridView();
-            colTipo = new DataGridViewTextBoxColumn();
-            colNumero = new DataGridViewTextBoxColumn();
-            colFornecedor = new DataGridViewTextBoxColumn();
-            colValor = new DataGridViewTextBoxColumn();
-            colVencimento = new DataGridViewTextBoxColumn();
-            colStatus = new DataGridViewComboBoxColumn();
-            colAnexo = new DataGridViewButtonColumn();
             colEditar = new DataGridViewButtonColumn();
             colExcluir = new DataGridViewButtonColumn();
             panelPaginacao = new Panel();
@@ -213,14 +206,10 @@
             dgvListagem.AllowUserToDeleteRows = false;
             dgvListagem.AllowUserToResizeColumns = false;
             dgvListagem.AllowUserToResizeRows = false;
-            dgvListagem.AllowUserToOrderColumns = false;
-            dgvListagem.AutoGenerateColumns = false;
             dataGridViewCellStyle1.BackColor = Color.FromArgb(250, 250, 250);
             dgvListagem.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
-            dgvListagem.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            dgvListagem.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            dgvListagem.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
             dgvListagem.BackgroundColor = Color.White;
-            dgvListagem.ScrollBars = ScrollBars.Both;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.FromArgb(240, 240, 240);
             dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -230,114 +219,42 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dgvListagem.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dgvListagem.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvListagem.Columns.AddRange(new DataGridViewColumn[] { colTipo, colNumero, colFornecedor, colValor, colVencimento, colStatus, colAnexo, colEditar, colExcluir });
+            dgvListagem.Columns.AddRange(new DataGridViewColumn[] { colEditar, colExcluir });
+            dgvListagem.Dock = DockStyle.Fill;
             dgvListagem.EnableHeadersVisualStyles = false;
-            dgvListagem.Location = new Point(20, 132);
+            dgvListagem.Location = new Point(0, 110);
+            dgvListagem.MultiSelect = false;
             dgvListagem.Name = "dgvListagem";
             dgvListagem.RowHeadersVisible = false;
             dgvListagem.RowHeadersWidth = 4;
             dgvListagem.RowTemplate.Height = 28;
             dgvListagem.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvListagem.Size = new Size(1340, 450);
+            dgvListagem.Size = new Size(1400, 490);
             dgvListagem.TabIndex = 2;
-            // 
-            // colTipo
-            // 
-            colTipo.DataPropertyName = "Tipo";
-            colTipo.HeaderText = "Tipo";
-            colTipo.Name = "colTipo";
-            colTipo.ReadOnly = true;
-            colTipo.SortMode = DataGridViewColumnSortMode.NotSortable;
-            colTipo.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colTipo.Width = 90;
-            // 
-            // colNumero
-            // 
-            colNumero.DataPropertyName = "Numero";
-            colNumero.HeaderText = "Número";
-            colNumero.Name = "colNumero";
-            colNumero.ReadOnly = true;
-            colNumero.SortMode = DataGridViewColumnSortMode.NotSortable;
-            colNumero.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colNumero.Width = 120;
-            // 
-            // colFornecedor
-            // 
-            colFornecedor.DataPropertyName = "Fornecedor";
-            colFornecedor.HeaderText = "Fornecedor";
-            colFornecedor.Name = "colFornecedor";
-            colFornecedor.ReadOnly = true;
-            colFornecedor.SortMode = DataGridViewColumnSortMode.NotSortable;
-            colFornecedor.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colFornecedor.Width = 300;
-            // 
-            // colValor
-            // 
-            colValor.DataPropertyName = "Valor";
-            colValor.HeaderText = "Valor";
-            colValor.DefaultCellStyle.Format = "C2";
-            colValor.Name = "colValor";
-            colValor.ReadOnly = true;
-            colValor.SortMode = DataGridViewColumnSortMode.NotSortable;
-            colValor.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colValor.Width = 100;
-            // 
-            // colVencimento
-            // 
-            colVencimento.DataPropertyName = "Vencimento";
-            colVencimento.HeaderText = "Vencimento";
-            colVencimento.DefaultCellStyle.Format = "dd/MM/yyyy";
-            colVencimento.Name = "colVencimento";
-            colVencimento.ReadOnly = true;
-            colVencimento.SortMode = DataGridViewColumnSortMode.NotSortable;
-            colVencimento.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colVencimento.Width = 100;
-            // 
-            // colStatus
-            // 
-            ((DataGridViewComboBoxColumn)colStatus).DataPropertyName = "Status";
-            ((DataGridViewComboBoxColumn)colStatus).HeaderText = "Status";
-            ((DataGridViewComboBoxColumn)colStatus).Name = "colStatus";
-            ((DataGridViewComboBoxColumn)colStatus).ReadOnly = false;
-            ((DataGridViewComboBoxColumn)colStatus).DataSource = Enum.GetValues(typeof(Quitta.Models.StatusItem));
-            ((DataGridViewComboBoxColumn)colStatus).ValueType = typeof(Quitta.Models.StatusItem);
-            ((DataGridViewComboBoxColumn)colStatus).SortMode = DataGridViewColumnSortMode.NotSortable;
-            ((DataGridViewComboBoxColumn)colStatus).AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            ((DataGridViewComboBoxColumn)colStatus).Width = 90;
-            // 
-            // colAnexo
-            // 
-            ((DataGridViewButtonColumn)colAnexo).DataPropertyName = "AnexoDisplay";
-            ((DataGridViewButtonColumn)colAnexo).HeaderText = "Anexo";
-            ((DataGridViewButtonColumn)colAnexo).Name = "colAnexo";
-            ((DataGridViewButtonColumn)colAnexo).ReadOnly = true;
-            ((DataGridViewButtonColumn)colAnexo).SortMode = DataGridViewColumnSortMode.NotSortable;
-            ((DataGridViewButtonColumn)colAnexo).AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            ((DataGridViewButtonColumn)colAnexo).Width = 140;
-            ((DataGridViewButtonColumn)colAnexo).FillWeight = 9;
-            ((DataGridViewButtonColumn)colAnexo).UseColumnTextForButtonValue = false;
             // 
             // colEditar
             // 
+            colEditar.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            colEditar.FillWeight = 6F;
             colEditar.HeaderText = "Editar";
             colEditar.MinimumWidth = 6;
             colEditar.Name = "colEditar";
             colEditar.ReadOnly = true;
             colEditar.Text = "Editar";
             colEditar.UseColumnTextForButtonValue = true;
-            colEditar.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            colEditar.FillWeight = 6;
+            colEditar.Width = 56;
             // 
             // colExcluir
             // 
+            colExcluir.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            colExcluir.FillWeight = 6F;
             colExcluir.HeaderText = "Excluir";
             colExcluir.MinimumWidth = 6;
             colExcluir.Name = "colExcluir";
             colExcluir.ReadOnly = true;
             colExcluir.Text = "Excluir";
             colExcluir.UseColumnTextForButtonValue = true;
-            colExcluir.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            colExcluir.FillWeight = 6;
+            colExcluir.Width = 61;
             // 
             // panelPaginacao
             // 

@@ -28,8 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             tableLayoutCards = new TableLayoutPanel();
             panelCardPendente = new Panel();
             lblValorPendente = new Label();
@@ -48,12 +46,6 @@
             lblTituloSaldo = new Label();
             lblTituloVencimentos = new Label();
             dgvVencimentos = new DataGridView();
-            Tipo = new DataGridViewTextBoxColumn();
-            Número = new DataGridViewTextBoxColumn();
-            Fornecedor = new DataGridViewTextBoxColumn();
-            Valor = new DataGridViewTextBoxColumn();
-            Vencimento = new DataGridViewTextBoxColumn();
-            Status = new DataGridViewTextBoxColumn();
             mainLayout = new TableLayoutPanel();
             panelGrafico = new Panel();
             lblGraficoTitulo = new Label();
@@ -275,12 +267,10 @@
             // 
             dgvVencimentos.AllowUserToAddRows = false;
             dgvVencimentos.AllowUserToDeleteRows = false;
-            dgvVencimentos.AutoGenerateColumns = false;
             dgvVencimentos.AllowUserToResizeColumns = false;
             dgvVencimentos.AllowUserToResizeRows = false;
             dgvVencimentos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvVencimentos.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvVencimentos.Columns.AddRange(new DataGridViewColumn[] { Tipo, Número, Fornecedor, Valor, Vencimento, Status });
             dgvVencimentos.Location = new Point(8, 64);
             dgvVencimentos.Name = "dgvVencimentos";
             dgvVencimentos.ReadOnly = true;
@@ -288,62 +278,6 @@
             dgvVencimentos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvVencimentos.Size = new Size(1320, 220);
             dgvVencimentos.TabIndex = 1;
-            // 
-            // Tipo
-            // 
-            Tipo.DataPropertyName = "Tipo";
-            Tipo.HeaderText = "Tipo";
-            Tipo.MinimumWidth = 6;
-            Tipo.Name = "Tipo";
-            Tipo.ReadOnly = true;
-            Tipo.Resizable = DataGridViewTriState.False;
-
-            // Número
-            Número.DataPropertyName = "Numero";
-            Número.HeaderText = "Número";
-            Número.MinimumWidth = 6;
-            Número.Name = "Número";
-            Número.ReadOnly = true;
-            Número.Resizable = DataGridViewTriState.False;
-
-            // Fornecedor
-            Fornecedor.DataPropertyName = "Fornecedor";
-            Fornecedor.HeaderText = "Fornecedor";
-            Fornecedor.MinimumWidth = 6;
-            Fornecedor.Name = "Fornecedor";
-            Fornecedor.ReadOnly = true;
-            Fornecedor.Resizable = DataGridViewTriState.False;
-
-            // Valor
-            Valor.DataPropertyName = "Valor";
-            dataGridViewCellStyle1.Format = "C2";
-            dataGridViewCellStyle1.NullValue = null;
-            Valor.DefaultCellStyle = dataGridViewCellStyle1;
-            Valor.HeaderText = "Valor";
-            Valor.MinimumWidth = 6;
-            Valor.Name = "Valor";
-            Valor.ReadOnly = true;
-            Valor.Resizable = DataGridViewTriState.False;
-
-            // Vencimento
-            Vencimento.DataPropertyName = "Vencimento";
-            dataGridViewCellStyle2.Format = "d";
-            dataGridViewCellStyle2.NullValue = null;
-            Vencimento.DefaultCellStyle = dataGridViewCellStyle2;
-            Vencimento.HeaderText = "Vencimento";
-            Vencimento.MinimumWidth = 6;
-            Vencimento.Name = "Vencimento";
-            Vencimento.ReadOnly = true;
-            Vencimento.Resizable = DataGridViewTriState.False;
-
-            // Status
-            Status.DataPropertyName = "Status";
-            Status.HeaderText = "Status";
-            Status.MinimumWidth = 6;
-            Status.Name = "Status";
-            Status.ReadOnly = true;
-            Status.Resizable = DataGridViewTriState.False;
-
             // 
             // mainLayout
             // 
@@ -400,12 +334,12 @@
             // 
             // picGrafico
             // 
+            picGrafico.BackColor = Color.WhiteSmoke;
             picGrafico.Location = new Point(8, 64);
             picGrafico.Name = "picGrafico";
             picGrafico.Size = new Size(1320, 220);
             picGrafico.TabIndex = 2;
             picGrafico.TabStop = false;
-            picGrafico.BackColor = Color.WhiteSmoke;
             // 
             // panelTabela
             // 
@@ -461,9 +395,9 @@
             mainLayout.ResumeLayout(false);
             panelGrafico.ResumeLayout(false);
             panelGrafico.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)picGrafico).EndInit();
             panelTabela.ResumeLayout(false);
             panelTabela.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)picGrafico).EndInit();
             ResumeLayout(false);
         }
 
