@@ -1,4 +1,5 @@
 ﻿using Quitta.Models;
+using Quitta.Forms;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Globalization;
 
 namespace Quitta.UserControls
 {
@@ -35,12 +37,14 @@ namespace Quitta.UserControls
         private void PopulateBudget()
         {
             var budgetRows = new List<BudgetMonthRow>();
+            var year = DateTime.Now.Year;
 
-            for (int i = 0; i < 12; i++)
+            // Build months for the current calendar year (Jan..Dec)
+            for (int month = 1; month <= 12; month++)
             {
-                var monthDate = DateTime.Now.AddMonths(i);
+                var monthDate = new DateTime(year, month, 1);
                 var monthKey = monthDate.ToString("yyyy-MM");
-                var monthName = monthDate.ToString("MMMM 'de' yyyy");
+                var monthName = monthDate.ToString("MMMM 'de' yyyy", CultureInfo.CurrentCulture);
 
                 var budget = budgets.FirstOrDefault(b => b.Month == monthKey)?.Budget ?? 0;
                 var paid = items
@@ -56,7 +60,7 @@ namespace Quitta.UserControls
                 string status = "Sem budget";
                 if (budget > 0)
                 {
-                    var percentage = (paid / budget) * 100;
+                    var percentage = budget == 0 ? 0 : (paid / budget) * 100;
                     if (percentage <= 80) status = "Saudável";
                     else if (percentage <= 100) status = "Atenção";
                     else status = "Excedido";
@@ -75,7 +79,6 @@ namespace Quitta.UserControls
             }
 
             // bind
-            // prevent auto-generation so extra properties (Month) don't create a visible column
             dgvBudgetMensal.AutoGenerateColumns = false;
             dgvBudgetMensal.DataSource = null;
             dgvBudgetMensal.DataSource = budgetRows;
@@ -85,15 +88,9 @@ namespace Quitta.UserControls
             var totalPaid = budgetRows.Sum(b => b.TotalPago);
             var totalBalance = totalBudget - totalPaid;
 
-            lblValorBudgetTotal.Text = totalBudget.ToString("C2");
-            lblValorPagoAnual.Text = totalPaid.ToString("C2");
-            lblValorSaldoAnual.Text = totalBalance.ToString("C2");
-
-            // ensure actions column exists (defined in designer) and remove any unnamed edit column if present
-            if (dgvBudgetMensal.Columns.Contains("btnEdit"))
-            {
-                dgvBudgetMensal.Columns.Remove("btnEdit");
-            }
+            lblValorBudgetTotal.Text = totalBudget.ToString("C2", CultureInfo.CurrentCulture);
+            lblValorPagoAnual.Text = totalPaid.ToString("C2", CultureInfo.CurrentCulture);
+            lblValorSaldoAnual.Text = totalBalance.ToString("C2", CultureInfo.CurrentCulture);
 
             // lock resizing and make columns non-resizable
             foreach (DataGridViewColumn c in dgvBudgetMensal.Columns)
@@ -117,11 +114,35 @@ namespace Quitta.UserControls
             if (e.ColumnIndex >= 0 && e.RowIndex >= 0 && dgvBudgetMensal.Columns.Count > e.ColumnIndex)
             {
                 var col = dgvBudgetMensal.Columns[e.ColumnIndex];
-                // handle click on actions button column
-                if (col.Name == "Acoes")
+                // support both designer-named column and legacy names
+                if (col.Name == "Acoes" || col.Name == "btnEdit" || col.Name == "Editar")
                 {
                     var row = (BudgetMonthRow)dgvBudgetMensal.Rows[e.RowIndex].DataBoundItem;
-                    ShowEditBudgetDialog(row.Month, row.BudgetPlanejado);
+
+                    using var dlg = new EditBudget();
+                    dlg.SetMonth(row.MesAno, row.BudgetPlanejado);
+                    var result = dlg.ShowDialog(this);
+                    if (result == DialogResult.OK)
+                    {
+                        var newBudget = dlg.BudgetValue;
+                        var monthKey = row.Month;
+                        var existing = budgets.FirstOrDefault(b => b.Month == monthKey);
+                        if (existing != null)
+                        {
+                            if (existing.Budget != newBudget)
+                            {
+                                existing.Budget = newBudget;
+                                BudgetsChanged?.Invoke();
+                            }
+                        }
+                        else
+                        {
+                            budgets.Add(new MonthlyBudget { Month = monthKey, Budget = newBudget });
+                            BudgetsChanged?.Invoke();
+                        }
+
+                        PopulateBudget();
+                    }
                 }
             }
         }
@@ -145,7 +166,7 @@ namespace Quitta.UserControls
                 }
                 else
                 {
-                    e.Value = data.BudgetPlanejado.ToString("C2");
+                    e.Value = data.BudgetPlanejado.ToString("C2", CultureInfo.CurrentCulture);
                     e.CellStyle.ForeColor = Color.Black;
                     e.FormattingApplied = true;
                 }
@@ -159,7 +180,7 @@ namespace Quitta.UserControls
                 if (col.DataPropertyName == "Pendente") val = data.Pendente;
                 if (col.DataPropertyName == "Saldo") val = data.Saldo;
 
-                e.Value = val.ToString("C2");
+                e.Value = val.ToString("C2", CultureInfo.CurrentCulture);
                 e.FormattingApplied = true;
 
                 if (col.DataPropertyName == "Pendente" && val > 0)
@@ -199,37 +220,6 @@ namespace Quitta.UserControls
             if (col.DataPropertyName == "MesAno")
             {
                 e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            }
-        }
-
-        private void ShowEditBudgetDialog(string month, decimal currentBudget)
-        {
-            var input = Microsoft.VisualBasic.Interaction.InputBox(
-                $"Digite o valor do budget para {month}:",
-                "Editar Budget",
-                currentBudget.ToString()
-            );
-
-            if (!string.IsNullOrEmpty(input))
-            {
-                if (decimal.TryParse(input, out decimal newBudget))
-                {
-                    var existing = budgets.FirstOrDefault(b => b.Month == month);
-                    if (existing != null)
-                        existing.Budget = newBudget;
-                    else
-                        budgets.Add(new MonthlyBudget { Month = month, Budget = newBudget });
-
-                    // notify parent to persist and refresh where necessary
-                    BudgetsChanged?.Invoke();
-
-                    // refresh view
-                    PopulateBudget();
-                }
-                else
-                {
-                    MessageBox.Show("Valor inválido.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
             }
         }
     }

@@ -29,9 +29,11 @@
         private void InitializeComponent()
         {
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             tableLayoutCardsBudget = new TableLayoutPanel();
             panelCardBudgetTotal = new Panel();
             lblValorBudgetTotal = new Label();
@@ -53,6 +55,12 @@
             Saldo = new DataGridViewTextBoxColumn();
             Situacao = new DataGridViewTextBoxColumn();
             Acoes = new DataGridViewButtonColumn();
+            tableLayoutCardsBudget.SuspendLayout();
+            panelCardBudgetTotal.SuspendLayout();
+            panelCardPagoAnual.SuspendLayout();
+            panelCardSaldoAnual.SuspendLayout();
+            panelBudget.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvBudgetMensal).BeginInit();
             SuspendLayout();
             // 
             // tableLayoutCardsBudget
@@ -65,31 +73,31 @@
             tableLayoutCardsBudget.Controls.Add(panelCardPagoAnual, 1, 0);
             tableLayoutCardsBudget.Controls.Add(panelCardSaldoAnual, 2, 0);
             tableLayoutCardsBudget.Dock = DockStyle.Top;
-            tableLayoutCardsBudget.Location = new Point(3, 81);
+            tableLayoutCardsBudget.Location = new Point(0, 78);
             tableLayoutCardsBudget.Name = "tableLayoutCardsBudget";
+            tableLayoutCardsBudget.Padding = new Padding(8);
             tableLayoutCardsBudget.RowCount = 1;
             tableLayoutCardsBudget.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutCardsBudget.Size = new Size(1328, 125);
             tableLayoutCardsBudget.TabIndex = 0;
-            tableLayoutCardsBudget.Padding = new Padding(8);
             // 
             // panelCardBudgetTotal
             // 
+            panelCardBudgetTotal.BorderStyle = BorderStyle.FixedSingle;
             panelCardBudgetTotal.Controls.Add(lblValorBudgetTotal);
             panelCardBudgetTotal.Controls.Add(lblTituloBudgetTotal);
             panelCardBudgetTotal.Dock = DockStyle.Fill;
-            panelCardBudgetTotal.Location = new Point(3, 3);
+            panelCardBudgetTotal.Location = new Point(11, 11);
             panelCardBudgetTotal.Name = "panelCardBudgetTotal";
-            panelCardBudgetTotal.Size = new Size(438, 119);
-            panelCardBudgetTotal.TabIndex = 0;
-            panelCardBudgetTotal.BorderStyle = BorderStyle.FixedSingle;
             panelCardBudgetTotal.Padding = new Padding(12);
+            panelCardBudgetTotal.Size = new Size(431, 103);
+            panelCardBudgetTotal.TabIndex = 0;
             // 
             // lblValorBudgetTotal
             // 
             lblValorBudgetTotal.AutoSize = true;
             lblValorBudgetTotal.Font = new Font("Segoe UI", 16.2F, FontStyle.Bold);
-            lblValorBudgetTotal.Location = new Point(16, 48);
+            lblValorBudgetTotal.Location = new Point(28, 60);
             lblValorBudgetTotal.Name = "lblValorBudgetTotal";
             lblValorBudgetTotal.Size = new Size(115, 38);
             lblValorBudgetTotal.TabIndex = 1;
@@ -98,29 +106,29 @@
             // lblTituloBudgetTotal
             // 
             lblTituloBudgetTotal.AutoSize = true;
-            lblTituloBudgetTotal.Location = new Point(16, 16);
+            lblTituloBudgetTotal.Location = new Point(28, 28);
             lblTituloBudgetTotal.Name = "lblTituloBudgetTotal";
-            lblTituloBudgetTotal.Size = new Size(106, 23);
+            lblTituloBudgetTotal.Size = new Size(94, 20);
             lblTituloBudgetTotal.TabIndex = 0;
             lblTituloBudgetTotal.Text = "Budget Total";
             // 
             // panelCardPagoAnual
             // 
+            panelCardPagoAnual.BorderStyle = BorderStyle.FixedSingle;
             panelCardPagoAnual.Controls.Add(lblValorPagoAnual);
             panelCardPagoAnual.Controls.Add(lblTituloPagoAnual);
             panelCardPagoAnual.Dock = DockStyle.Fill;
-            panelCardPagoAnual.Location = new Point(447, 3);
+            panelCardPagoAnual.Location = new Point(448, 11);
             panelCardPagoAnual.Name = "panelCardPagoAnual";
-            panelCardPagoAnual.Size = new Size(438, 119);
-            panelCardPagoAnual.TabIndex = 1;
-            panelCardPagoAnual.BorderStyle = BorderStyle.FixedSingle;
             panelCardPagoAnual.Padding = new Padding(12);
+            panelCardPagoAnual.Size = new Size(431, 103);
+            panelCardPagoAnual.TabIndex = 1;
             // 
             // lblValorPagoAnual
             // 
             lblValorPagoAnual.AutoSize = true;
             lblValorPagoAnual.Font = new Font("Segoe UI", 16.2F, FontStyle.Bold);
-            lblValorPagoAnual.Location = new Point(16, 48);
+            lblValorPagoAnual.Location = new Point(28, 60);
             lblValorPagoAnual.Name = "lblValorPagoAnual";
             lblValorPagoAnual.Size = new Size(115, 38);
             lblValorPagoAnual.TabIndex = 1;
@@ -129,29 +137,29 @@
             // lblTituloPagoAnual
             // 
             lblTituloPagoAnual.AutoSize = true;
-            lblTituloPagoAnual.Location = new Point(16, 16);
+            lblTituloPagoAnual.Location = new Point(28, 28);
             lblTituloPagoAnual.Name = "lblTituloPagoAnual";
-            lblTituloPagoAnual.Size = new Size(174, 23);
+            lblTituloPagoAnual.Size = new Size(154, 20);
             lblTituloPagoAnual.TabIndex = 0;
             lblTituloPagoAnual.Text = "Total Pago (12 meses)";
             // 
             // panelCardSaldoAnual
             // 
+            panelCardSaldoAnual.BorderStyle = BorderStyle.FixedSingle;
             panelCardSaldoAnual.Controls.Add(lblValorSaldoAnual);
             panelCardSaldoAnual.Controls.Add(lblTituloSaldoAnual);
             panelCardSaldoAnual.Dock = DockStyle.Fill;
-            panelCardSaldoAnual.Location = new Point(891, 3);
+            panelCardSaldoAnual.Location = new Point(885, 11);
             panelCardSaldoAnual.Name = "panelCardSaldoAnual";
-            panelCardSaldoAnual.Size = new Size(434, 119);
-            panelCardSaldoAnual.TabIndex = 2;
-            panelCardSaldoAnual.BorderStyle = BorderStyle.FixedSingle;
             panelCardSaldoAnual.Padding = new Padding(12);
+            panelCardSaldoAnual.Size = new Size(432, 103);
+            panelCardSaldoAnual.TabIndex = 2;
             // 
             // lblValorSaldoAnual
             // 
             lblValorSaldoAnual.AutoSize = true;
             lblValorSaldoAnual.Font = new Font("Segoe UI", 16.2F, FontStyle.Bold);
-            lblValorSaldoAnual.Location = new Point(16, 48);
+            lblValorSaldoAnual.Location = new Point(28, 60);
             lblValorSaldoAnual.Name = "lblValorSaldoAnual";
             lblValorSaldoAnual.Size = new Size(115, 38);
             lblValorSaldoAnual.TabIndex = 1;
@@ -160,9 +168,9 @@
             // lblTituloSaldoAnual
             // 
             lblTituloSaldoAnual.AutoSize = true;
-            lblTituloSaldoAnual.Location = new Point(16, 16);
+            lblTituloSaldoAnual.Location = new Point(28, 28);
             lblTituloSaldoAnual.Name = "lblTituloSaldoAnual";
-            lblTituloSaldoAnual.Size = new Size(135, 23);
+            lblTituloSaldoAnual.Size = new Size(121, 20);
             lblTituloSaldoAnual.TabIndex = 0;
             lblTituloSaldoAnual.Text = "Saldo Disponível";
             // 
@@ -171,7 +179,7 @@
             panelBudget.Controls.Add(lblTituloBudgetAnual);
             panelBudget.Controls.Add(lblDescricaoBudget);
             panelBudget.Dock = DockStyle.Top;
-            panelBudget.Location = new Point(3, 3);
+            panelBudget.Location = new Point(0, 0);
             panelBudget.Name = "panelBudget";
             panelBudget.Size = new Size(1328, 78);
             panelBudget.TabIndex = 2;
@@ -193,99 +201,114 @@
             lblDescricaoBudget.ForeColor = Color.Gray;
             lblDescricaoBudget.Location = new Point(15, 50);
             lblDescricaoBudget.Name = "lblDescricaoBudget";
-            lblDescricaoBudget.Size = new Size(516, 23);
+            lblDescricaoBudget.Size = new Size(397, 23);
             lblDescricaoBudget.TabIndex = 1;
-            lblDescricaoBudget.Text = "Gerencie o orçamento disponível ao longo dos próximos 12 meses";
+            lblDescricaoBudget.Text = "Gerencie o orçamento disponível ao longo do ano.";
             // 
             // dgvBudgetMensal
             // 
             dgvBudgetMensal.AllowUserToAddRows = false;
             dgvBudgetMensal.AllowUserToDeleteRows = false;
-            dgvBudgetMensal.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            // designer-driven DataGridView visual settings
             dgvBudgetMensal.AllowUserToResizeColumns = false;
             dgvBudgetMensal.AllowUserToResizeRows = false;
-            dgvBudgetMensal.RowHeadersVisible = false;
-            dgvBudgetMensal.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvBudgetMensal.DefaultCellStyle.SelectionBackColor = Color.FromArgb(230, 240, 250);
-            dgvBudgetMensal.DefaultCellStyle.SelectionForeColor = Color.Black;
-            dgvBudgetMensal.EnableHeadersVisualStyles = false;
-            dgvBudgetMensal.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            dgvBudgetMensal.ColumnHeadersDefaultCellStyle.BackColor = Color.White;
-            dgvBudgetMensal.GridColor = Color.FromArgb(230, 230, 230);
+            dgvBudgetMensal.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = Color.White;
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dgvBudgetMensal.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dgvBudgetMensal.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvBudgetMensal.Dock = DockStyle.Fill;
-            dgvBudgetMensal.Name = "dgvBudgetMensal";
-            dgvBudgetMensal.RowHeadersWidth = 51;
-            dgvBudgetMensal.TabIndex = 3;
             dgvBudgetMensal.Columns.AddRange(new DataGridViewColumn[] { Mês, Budget, Pago, Pendente, Saldo, Situacao, Acoes });
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle6.BackColor = SystemColors.Window;
+            dataGridViewCellStyle6.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle6.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle6.SelectionBackColor = Color.FromArgb(230, 240, 250);
+            dataGridViewCellStyle6.SelectionForeColor = Color.Black;
+            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.False;
+            dgvBudgetMensal.DefaultCellStyle = dataGridViewCellStyle6;
+            dgvBudgetMensal.Dock = DockStyle.Fill;
+            dgvBudgetMensal.EnableHeadersVisualStyles = false;
+            dgvBudgetMensal.GridColor = Color.FromArgb(230, 230, 230);
+            // Prevent direct cell editing - use the Edit dialog instead
+            dgvBudgetMensal.ReadOnly = true;
+            dgvBudgetMensal.Location = new Point(0, 203);
+            dgvBudgetMensal.Name = "dgvBudgetMensal";
+            dgvBudgetMensal.CellClick += new DataGridViewCellEventHandler(this.DgvBudgetMensal_CellClick);
+            dgvBudgetMensal.CellFormatting += new DataGridViewCellFormattingEventHandler(this.DgvBudgetMensal_CellFormatting);
+            dgvBudgetMensal.RowHeadersVisible = false;
+            dgvBudgetMensal.RowHeadersWidth = 51;
+            dgvBudgetMensal.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvBudgetMensal.Size = new Size(1328, 480);
+            dgvBudgetMensal.TabIndex = 3;
             // 
             // Mês
             // 
             Mês.DataPropertyName = "MesAno";
+            Mês.FillWeight = 12F;
             Mês.HeaderText = "Mês";
             Mês.MinimumWidth = 6;
             Mês.Name = "Mês";
-            Mês.Visible = true;
-            Mês.FillWeight = 12F;
             // 
             // Budget
             // 
             Budget.DataPropertyName = "BudgetPlanejado";
-            dataGridViewCellStyle1.Format = "c2";
-            Budget.DefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle2.Format = "c2";
+            Budget.DefaultCellStyle = dataGridViewCellStyle2;
+            Budget.FillWeight = 30F;
             Budget.HeaderText = "Budget Planejado";
             Budget.MinimumWidth = 6;
             Budget.Name = "Budget";
-            Budget.FillWeight = 30F;
             // 
             // Pago
             // 
             Pago.DataPropertyName = "TotalPago";
-            dataGridViewCellStyle2.Format = "c2";
-            Pago.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle3.Format = "c2";
+            Pago.DefaultCellStyle = dataGridViewCellStyle3;
+            Pago.FillWeight = 15F;
             Pago.HeaderText = "Total Pago";
             Pago.MinimumWidth = 6;
             Pago.Name = "Pago";
-            Pago.FillWeight = 15F;
             // 
             // Pendente
             // 
             Pendente.DataPropertyName = "Pendente";
-            dataGridViewCellStyle3.Format = "c2";
-            Pendente.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle4.Format = "c2";
+            Pendente.DefaultCellStyle = dataGridViewCellStyle4;
+            Pendente.FillWeight = 15F;
             Pendente.HeaderText = "Pendente";
             Pendente.MinimumWidth = 6;
             Pendente.Name = "Pendente";
-            Pendente.FillWeight = 15F;
             // 
             // Saldo
             // 
             Saldo.DataPropertyName = "Saldo";
-            dataGridViewCellStyle4.Format = "c2";
-            Saldo.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle5.Format = "c2";
+            Saldo.DefaultCellStyle = dataGridViewCellStyle5;
+            Saldo.FillWeight = 15F;
             Saldo.HeaderText = "Saldo";
             Saldo.MinimumWidth = 6;
             Saldo.Name = "Saldo";
-            Saldo.FillWeight = 15F;
             // 
             // Situacao
             // 
             Situacao.DataPropertyName = "StatusDisplay";
+            Situacao.FillWeight = 8F;
             Situacao.HeaderText = "Status";
             Situacao.MinimumWidth = 6;
             Situacao.Name = "Situacao";
-            Situacao.FillWeight = 8F;
             // 
             // Acoes
             // 
-            ((DataGridViewButtonColumn)Acoes).HeaderText = "Ações";
-            ((DataGridViewButtonColumn)Acoes).MinimumWidth = 6;
+            Acoes.FillWeight = 5F;
+            Acoes.HeaderText = "Ações";
+            Acoes.MinimumWidth = 6;
             Acoes.Name = "Acoes";
-            ((DataGridViewButtonColumn)Acoes).Text = "✎";
-            ((DataGridViewButtonColumn)Acoes).UseColumnTextForButtonValue = true;
-            ((DataGridViewButtonColumn)Acoes).Width = 60;
-            ((DataGridViewButtonColumn)Acoes).FillWeight = 5F;
+            Acoes.Text = "✎";
+            Acoes.UseColumnTextForButtonValue = true;
             // 
             // BudgetAnualControl
             // 
@@ -294,6 +317,16 @@
             Controls.Add(panelBudget);
             Name = "BudgetAnualControl";
             Size = new Size(1328, 683);
+            tableLayoutCardsBudget.ResumeLayout(false);
+            panelCardBudgetTotal.ResumeLayout(false);
+            panelCardBudgetTotal.PerformLayout();
+            panelCardPagoAnual.ResumeLayout(false);
+            panelCardPagoAnual.PerformLayout();
+            panelCardSaldoAnual.ResumeLayout(false);
+            panelCardSaldoAnual.PerformLayout();
+            panelBudget.ResumeLayout(false);
+            panelBudget.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvBudgetMensal).EndInit();
             ResumeLayout(false);
         }
 
