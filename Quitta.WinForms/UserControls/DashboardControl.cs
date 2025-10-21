@@ -19,6 +19,78 @@ namespace Quitta.UserControls
         public DashboardControl()
         {
             InitializeComponent();
+            ConfigureVencimentosGrid();
+        }
+
+        private void ConfigureVencimentosGrid()
+        {
+            // Ensure we control which columns are shown (do not rely on auto-generation)
+            dgvVencimentos.AutoGenerateColumns = false;
+            dgvVencimentos.Columns.Clear();
+
+            var colTipo = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Tipo",
+                Name = "colTipo",
+                HeaderText = "Tipo",
+                FillWeight = 12F,
+                ReadOnly = true,
+                MinimumWidth = 6,
+                Resizable = DataGridViewTriState.False
+            };
+
+            var colNumero = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Numero",
+                Name = "colNumero",
+                HeaderText = "Número",
+                FillWeight = 20F,
+                ReadOnly = true,
+                MinimumWidth = 6,
+                Resizable = DataGridViewTriState.False
+            };
+
+            var colFornecedor = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Fornecedor",
+                Name = "colFornecedor",
+                HeaderText = "Fornecedor",
+                FillWeight = 25F,
+                ReadOnly = true,
+                MinimumWidth = 6,
+                Resizable = DataGridViewTriState.False
+            };
+
+            var colValor = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Valor",
+                Name = "colValor",
+                HeaderText = "Valor",
+                FillWeight = 12F,
+                ReadOnly = true,
+                MinimumWidth = 6,
+                Resizable = DataGridViewTriState.False
+            };
+            colValor.DefaultCellStyle = new DataGridViewCellStyle { Format = "C2", Alignment = DataGridViewContentAlignment.MiddleRight };
+
+            var colVencimento = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Vencimento",
+                Name = "colVencimento",
+                HeaderText = "Vencimento",
+                FillWeight = 16F,
+                ReadOnly = true,
+                MinimumWidth = 6,
+                Resizable = DataGridViewTriState.False
+            };
+            colVencimento.DefaultCellStyle = new DataGridViewCellStyle { Format = "d", Alignment = DataGridViewContentAlignment.MiddleLeft };
+
+            dgvVencimentos.Columns.AddRange(new DataGridViewColumn[] { colTipo, colNumero, colFornecedor, colValor, colVencimento });
+
+            // Visual tweaks to match other grids
+            dgvVencimentos.EnableHeadersVisualStyles = false;
+            dgvVencimentos.BackgroundColor = Color.White;
+            dgvVencimentos.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(250, 250, 250) };
         }
 
         /// <summary>

@@ -46,6 +46,7 @@
             lblTituloSaldo = new Label();
             lblTituloVencimentos = new Label();
             dgvVencimentos = new DataGridView();
+            Status = new DataGridViewTextBoxColumn();
             mainLayout = new TableLayoutPanel();
             panelGrafico = new Panel();
             lblGraficoTitulo = new Label();
@@ -85,7 +86,7 @@
             tableLayoutCards.Name = "tableLayoutCards";
             tableLayoutCards.RowCount = 1;
             tableLayoutCards.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutCards.Size = new Size(1328, 120);
+            tableLayoutCards.Size = new Size(1369, 120);
             tableLayoutCards.TabIndex = 0;
             // 
             // panelCardPendente
@@ -98,7 +99,7 @@
             panelCardPendente.Location = new Point(10, 10);
             panelCardPendente.Margin = new Padding(10);
             panelCardPendente.Name = "panelCardPendente";
-            panelCardPendente.Size = new Size(245, 100);
+            panelCardPendente.Size = new Size(253, 100);
             panelCardPendente.TabIndex = 0;
             // 
             // lblValorPendente
@@ -128,10 +129,10 @@
             panelTituloVencido.Controls.Add(lblValorVencido);
             panelTituloVencido.Controls.Add(lblTituloVencido);
             panelTituloVencido.Dock = DockStyle.Fill;
-            panelTituloVencido.Location = new Point(275, 10);
+            panelTituloVencido.Location = new Point(283, 10);
             panelTituloVencido.Margin = new Padding(10);
             panelTituloVencido.Name = "panelTituloVencido";
-            panelTituloVencido.Size = new Size(245, 100);
+            panelTituloVencido.Size = new Size(253, 100);
             panelTituloVencido.TabIndex = 1;
             // 
             // lblValorVencido
@@ -161,10 +162,10 @@
             panelCardPago.Controls.Add(lblValorPago);
             panelCardPago.Controls.Add(lblTituloPago);
             panelCardPago.Dock = DockStyle.Fill;
-            panelCardPago.Location = new Point(540, 10);
+            panelCardPago.Location = new Point(556, 10);
             panelCardPago.Margin = new Padding(10);
             panelCardPago.Name = "panelCardPago";
-            panelCardPago.Size = new Size(245, 100);
+            panelCardPago.Size = new Size(253, 100);
             panelCardPago.TabIndex = 2;
             // 
             // lblValorPago
@@ -194,10 +195,10 @@
             panelCardBudget.Controls.Add(lblValorBudget);
             panelCardBudget.Controls.Add(lblTituloBudget);
             panelCardBudget.Dock = DockStyle.Fill;
-            panelCardBudget.Location = new Point(805, 10);
+            panelCardBudget.Location = new Point(829, 10);
             panelCardBudget.Margin = new Padding(10);
             panelCardBudget.Name = "panelCardBudget";
-            panelCardBudget.Size = new Size(245, 100);
+            panelCardBudget.Size = new Size(253, 100);
             panelCardBudget.TabIndex = 3;
             // 
             // lblValorBudget
@@ -227,10 +228,10 @@
             panelCardSaldo.Controls.Add(lblValorSaldo);
             panelCardSaldo.Controls.Add(lblTituloSaldo);
             panelCardSaldo.Dock = DockStyle.Fill;
-            panelCardSaldo.Location = new Point(1070, 10);
+            panelCardSaldo.Location = new Point(1102, 10);
             panelCardSaldo.Margin = new Padding(10);
             panelCardSaldo.Name = "panelCardSaldo";
-            panelCardSaldo.Size = new Size(248, 100);
+            panelCardSaldo.Size = new Size(257, 100);
             panelCardSaldo.TabIndex = 4;
             // 
             // lblValorSaldo
@@ -269,15 +270,24 @@
             dgvVencimentos.AllowUserToDeleteRows = false;
             dgvVencimentos.AllowUserToResizeColumns = false;
             dgvVencimentos.AllowUserToResizeRows = false;
+            dgvVencimentos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvVencimentos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvVencimentos.BackgroundColor = Color.White;
             dgvVencimentos.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvVencimentos.Location = new Point(8, 64);
             dgvVencimentos.Name = "dgvVencimentos";
             dgvVencimentos.ReadOnly = true;
+            dgvVencimentos.RowHeadersVisible = false;
             dgvVencimentos.RowHeadersWidth = 51;
             dgvVencimentos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvVencimentos.Size = new Size(1320, 220);
+            dgvVencimentos.Size = new Size(1345, 204);
             dgvVencimentos.TabIndex = 1;
+            // 
+            // Status
+            // 
+            Status.MinimumWidth = 6;
+            Status.Name = "Status";
+            Status.Width = 125;
             // 
             // mainLayout
             // 
@@ -294,7 +304,7 @@
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 140F));
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            mainLayout.Size = new Size(1374, 737);
+            mainLayout.Size = new Size(1415, 743);
             mainLayout.TabIndex = 1;
             // 
             // panelGrafico
@@ -308,7 +318,7 @@
             panelGrafico.Margin = new Padding(0, 0, 0, 16);
             panelGrafico.Name = "panelGrafico";
             panelGrafico.Padding = new Padding(16);
-            panelGrafico.Size = new Size(1334, 262);
+            panelGrafico.Size = new Size(1375, 265);
             panelGrafico.TabIndex = 1;
             // 
             // lblGraficoTitulo
@@ -334,10 +344,12 @@
             // 
             // picGrafico
             // 
+            picGrafico.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             picGrafico.BackColor = Color.WhiteSmoke;
             picGrafico.Location = new Point(8, 64);
             picGrafico.Name = "picGrafico";
-            picGrafico.Size = new Size(1320, 220);
+            picGrafico.Size = new Size(1348, 191);
+            picGrafico.SizeMode = PictureBoxSizeMode.AutoSize;
             picGrafico.TabIndex = 2;
             picGrafico.TabStop = false;
             // 
@@ -348,10 +360,10 @@
             panelTabela.Controls.Add(lblTabelaSub);
             panelTabela.Controls.Add(dgvVencimentos);
             panelTabela.Dock = DockStyle.Fill;
-            panelTabela.Location = new Point(23, 441);
+            panelTabela.Location = new Point(23, 444);
             panelTabela.Name = "panelTabela";
             panelTabela.Padding = new Padding(16);
-            panelTabela.Size = new Size(1328, 273);
+            panelTabela.Size = new Size(1369, 276);
             panelTabela.TabIndex = 2;
             // 
             // lblTabelaTitulo
@@ -379,7 +391,7 @@
             // 
             Controls.Add(mainLayout);
             Name = "DashboardControl";
-            Size = new Size(1374, 737);
+            Size = new Size(1415, 743);
             tableLayoutCards.ResumeLayout(false);
             panelCardPendente.ResumeLayout(false);
             panelCardPendente.PerformLayout();
