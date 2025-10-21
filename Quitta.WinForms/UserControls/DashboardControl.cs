@@ -151,21 +151,33 @@ namespace Quitta.UserControls
 
         private void AtualizarGrafico()
         {
-            // Placeholder: desenha um gráfico simples no PictureBox
+            // Use fixed dimensions to avoid rendering cuts
+            const int targetWidth = 1342;
+            const int targetHeight = 187;
+            const int legendHeight = 30; // reserve bottom area for legend
+
             if (picGrafico == null) return;
 
-            var bmp = new Bitmap(picGrafico.Width, picGrafico.Height);
+            // ensure picturebox scales image instead of cropping
+            picGrafico.SizeMode = PictureBoxSizeMode.Zoom;
+
+            var bmp = new Bitmap(targetWidth, targetHeight);
             using (var g = Graphics.FromImage(bmp))
             {
                 g.Clear(Color.White);
-                using (var pen = new Pen(Color.LightGray))
+
+                // colors
+                var colorBoleto = Color.FromArgb(30, 64, 175); // blue
+                var colorNota = Color.FromArgb(218, 83, 17); // orange
+                var brushBoleto = new SolidBrush(colorBoleto);
+                var brushNota = new SolidBrush(colorNota);
+                var penGrid = new Pen(Color.LightGray);
+
+                // draw placeholder grid
+                for (int i = 0; i < 5; i++)
                 {
-                    // draw placeholder grid
-                    for (int i = 0; i < 5; i++)
-                    {
-                        int y = 20 + i * (bmp.Height - 40) / 5;
-                        g.DrawLine(pen, 40, y, bmp.Width - 20, y);
-                    }
+                    int y = 20 + i * (targetHeight - 40 - legendHeight) / 5;
+                    g.DrawLine(penGrid, 40, y, targetWidth - 20, y);
                 }
 
                 // draw bars based on data
@@ -183,36 +195,75 @@ namespace Quitta.UserControls
                          .Sum(x => x.Valor)
                 ).ToArray();
 
+                int[] countBoletos = meses.Select(m =>
+                    items.Count(x => x.Tipo == TipoItem.Boleto && x.Vencimento.Month == m.Month && x.Vencimento.Year == m.Year)
+                ).ToArray();
+
+                int[] countNotas = meses.Select(m =>
+                    items.Count(x => x.Tipo == TipoItem.Nota && x.Vencimento.Month == m.Month && x.Vencimento.Year == m.Year)
+                ).ToArray();
+
                 double maxVal = Math.Max(1, Math.Max(valoresBoletos.Max(), valoresNotas.Max()));
-                int plotWidth = bmp.Width - 60;
-                int plotHeight = bmp.Height - 80;
+                int plotWidth = targetWidth - 60;
+                int plotHeight = targetHeight - 80 - legendHeight; // leave top/bottom space + legend
                 int startX = 50;
-                int barGroupWidth = plotWidth / meses.Count();
+                int barGroupWidth = Math.Max(1, plotWidth / Math.Max(1, meses.Count()));
                 int barWidth = (int)(barGroupWidth * 0.35);
 
-                for (int i = 0; i < meses.Count; i++)
-                {
-                    int groupX = startX + i * barGroupWidth;
-                    int h1 = (int)(valoresBoletos[i] / maxVal * plotHeight);
-                    int h2 = (int)(valoresNotas[i] / maxVal * plotHeight);
-
-                    var rect1 = new Rectangle(groupX - barWidth / 2, bmp.Height - 30 - h1, barWidth, h1);
-                    var rect2 = new Rectangle(groupX + barWidth / 2, bmp.Height - 30 - h2, barWidth, h2);
-
-                    g.FillRectangle(Brushes.DarkBlue, rect1);
-                    g.FillRectangle(Brushes.SaddleBrown, rect2);
-                }
-
-                // draw x labels
-                using (var sf = new StringFormat { Alignment = StringAlignment.Center })
-                using (var font = new Font("Segoe UI", 8))
+                using (var fontValue = new Font("Segoe UI", 8, FontStyle.Bold))
+                using (var fontLabel = new Font("Segoe UI", 8))
+                using (var sfCenter = new StringFormat { Alignment = StringAlignment.Center })
+                using (var sfRight = new StringFormat { Alignment = StringAlignment.Far })
                 {
                     for (int i = 0; i < meses.Count; i++)
                     {
                         int groupX = startX + i * barGroupWidth;
-                        g.DrawString(meses[i].ToString("MMM"), font, Brushes.Black, groupX, bmp.Height - 20, sf);
+                        int h1 = (int)(valoresBoletos[i] / maxVal * plotHeight);
+                        int h2 = (int)(valoresNotas[i] / maxVal * plotHeight);
+
+                        var rect1 = new Rectangle(groupX - barWidth / 2, (targetHeight - legendHeight) - 30 - h1, barWidth, h1);
+                        var rect2 = new Rectangle(groupX + barWidth / 2, (targetHeight - legendHeight) - 30 - h2, barWidth, h2);
+
+                        g.FillRectangle(brushBoleto, rect1);
+                        g.FillRectangle(brushNota, rect2);
+
+                        // draw currency totals above each bar
+                        var valStr1 = ((decimal)valoresBoletos[i]).ToString("C0");
+                        var valStr2 = ((decimal)valoresNotas[i]).ToString("C0");
+                        int labelY1 = rect1.Y - 14;
+                        int labelY2 = rect2.Y - 14;
+                        g.DrawString(valStr1, fontValue, Brushes.Black, rect1.X + rect1.Width / 2, labelY1, sfCenter);
+                        g.DrawString(valStr2, fontValue, Brushes.Black, rect2.X + rect2.Width / 2, labelY2, sfCenter);
+
+                        // draw counts above the currency value
+                        var countStr1 = countBoletos[i].ToString();
+                        var countStr2 = countNotas[i].ToString();
+                        int countY1 = labelY1 - 12;
+                        int countY2 = labelY2 - 12;
+                        g.DrawString(countStr1, fontLabel, Brushes.Black, rect1.X + rect1.Width / 2, countY1, sfCenter);
+                        g.DrawString(countStr2, fontLabel, Brushes.Black, rect2.X + rect2.Width / 2, countY2, sfCenter);
+
+                        // month label removed to reduce clutter
                     }
+
+                    // draw legend area (only labels)
+                    int legendY = targetHeight - legendHeight + 6;
+                    int legendX = 60;
+                    int boxSize = 10;
+
+                    // draw boleto legend label
+                    g.FillRectangle(brushBoleto, new Rectangle(legendX, legendY, boxSize, boxSize));
+                    g.DrawString("Boletos", fontLabel, Brushes.Black, legendX + boxSize + 6, legendY - 1);
+
+                    // draw nota legend label
+                    int gap = 120;
+                    g.FillRectangle(brushNota, new Rectangle(legendX + gap, legendY, boxSize, boxSize));
+                    g.DrawString("Notas", fontLabel, Brushes.Black, legendX + gap + boxSize + 6, legendY - 1);
                 }
+
+                penGrid.Dispose();
+                brushBoleto.Dispose();
+                brushNota.Dispose();
             }
 
             picGrafico.Image?.Dispose();

@@ -348,8 +348,7 @@
             picGrafico.BackColor = Color.WhiteSmoke;
             picGrafico.Location = new Point(8, 64);
             picGrafico.Name = "picGrafico";
-            picGrafico.Size = new Size(1348, 191);
-            picGrafico.SizeMode = PictureBoxSizeMode.AutoSize;
+            picGrafico.Size = new Size(1342, 187);
             picGrafico.TabIndex = 2;
             picGrafico.TabStop = false;
             // 
