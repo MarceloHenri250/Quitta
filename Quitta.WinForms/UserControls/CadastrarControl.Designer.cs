@@ -30,6 +30,9 @@
         {
             lblCadastroTitulo = new Label();
             groupBoxForm = new GroupBox();
+            panelButtons = new Panel();
+            btnCadastrar = new Button();
+            btnLimpar = new Button();
             rbBoleto = new RadioButton();
             rbNota = new RadioButton();
             lblTipo = new Label();
@@ -51,13 +54,10 @@
             btnUpload = new Button();
             lblUploadInfo = new Label();
             lblExtracaoDev = new Label();
-            btnLimpar = new Button();
-            btnCadastrar = new Button();
-            panelButtons = new Panel();
             groupBoxForm.SuspendLayout();
+            panelButtons.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numValor).BeginInit();
             groupBoxUpload.SuspendLayout();
-            panelButtons.SuspendLayout();
             SuspendLayout();
             // 
             // lblCadastroTitulo
@@ -93,6 +93,38 @@
             groupBoxForm.TabIndex = 1;
             groupBoxForm.TabStop = false;
             groupBoxForm.Text = "Dados do Boleto/Nota";
+            // 
+            // panelButtons
+            // 
+            panelButtons.Controls.Add(btnCadastrar);
+            panelButtons.Controls.Add(btnLimpar);
+            panelButtons.Dock = DockStyle.Bottom;
+            panelButtons.Location = new Point(3, 685);
+            panelButtons.Name = "panelButtons";
+            panelButtons.Padding = new Padding(10);
+            panelButtons.Size = new Size(754, 72);
+            panelButtons.TabIndex = 20;
+            // 
+            // btnCadastrar
+            // 
+            btnCadastrar.BackColor = Color.FromArgb(3, 2, 19);
+            btnCadastrar.FlatStyle = FlatStyle.Flat;
+            btnCadastrar.ForeColor = Color.White;
+            btnCadastrar.Location = new Point(10, 12);
+            btnCadastrar.Name = "btnCadastrar";
+            btnCadastrar.Size = new Size(300, 40);
+            btnCadastrar.TabIndex = 13;
+            btnCadastrar.Text = "Cadastrar";
+            btnCadastrar.UseVisualStyleBackColor = false;
+            // 
+            // btnLimpar
+            // 
+            btnLimpar.FlatStyle = FlatStyle.Flat;
+            btnLimpar.Location = new Point(330, 12);
+            btnLimpar.Name = "btnLimpar";
+            btnLimpar.Size = new Size(200, 40);
+            btnLimpar.TabIndex = 14;
+            btnLimpar.Text = "Limpar Formulário";
             // 
             // rbBoleto
             // 
@@ -304,38 +336,6 @@
             lblExtracaoDev.TabIndex = 4;
             lblExtracaoDev.Text = "(Extração automática: Em desenvolvimento)";
             // 
-            // btnLimpar
-            // 
-            btnLimpar.FlatStyle = FlatStyle.Flat;
-            btnLimpar.Location = new Point(330, 12);
-            btnLimpar.Name = "btnLimpar";
-            btnLimpar.Size = new Size(200, 40);
-            btnLimpar.TabIndex = 14;
-            btnLimpar.Text = "Limpar Formulário";
-            // 
-            // btnCadastrar
-            // 
-            btnCadastrar.BackColor = Color.FromArgb(3, 2, 19);
-            btnCadastrar.FlatStyle = FlatStyle.Flat;
-            btnCadastrar.ForeColor = Color.White;
-            btnCadastrar.Location = new Point(10, 12);
-            btnCadastrar.Name = "btnCadastrar";
-            btnCadastrar.Size = new Size(300, 40);
-            btnCadastrar.TabIndex = 13;
-            btnCadastrar.Text = "Cadastrar";
-            btnCadastrar.UseVisualStyleBackColor = false;
-            // 
-            // panelButtons
-            // 
-            panelButtons.Controls.Add(btnCadastrar);
-            panelButtons.Controls.Add(btnLimpar);
-            panelButtons.Dock = DockStyle.Bottom;
-            panelButtons.Location = new Point(3, 685);
-            panelButtons.Name = "panelButtons";
-            panelButtons.Padding = new Padding(10);
-            panelButtons.Size = new Size(754, 72);
-            panelButtons.TabIndex = 20;
-            // 
             // CadastrarControl
             // 
             Controls.Add(groupBoxUpload);
@@ -345,10 +345,10 @@
             Size = new Size(1400, 900);
             groupBoxForm.ResumeLayout(false);
             groupBoxForm.PerformLayout();
+            panelButtons.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numValor).EndInit();
             groupBoxUpload.ResumeLayout(false);
             groupBoxUpload.PerformLayout();
-            panelButtons.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }

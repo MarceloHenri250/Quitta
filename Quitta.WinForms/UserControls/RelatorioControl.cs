@@ -44,7 +44,7 @@ namespace Quitta.UserControls
             if (lblDev != null)
             {
                 var count = items?.Count ?? 0;
-                lblDev.Text = $"Relatório - Em desenvolvimento ({count} itens)";
+                lblDev.Text = $"Relatório - Em desenvolvimento!";
             }
 
             // In the future, raise FilterApplied when user filters the report

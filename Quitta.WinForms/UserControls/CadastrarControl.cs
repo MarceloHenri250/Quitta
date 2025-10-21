@@ -259,19 +259,7 @@ namespace Quitta.UserControls
                 return;
             }
 
-            // Validação específica para boleto: 44 dígitos
-            if (rbBoleto.Checked)
-            {
-                var digitsOnly = Regex.Replace(txtNumero.Text ?? string.Empty, "\\D", string.Empty);
-                if (digitsOnly.Length != 44)
-                {
-                    MessageBox.Show("Número de boleto inválido. Informe os 44 dígitos do código de barras do boleto.", "Atenção",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    txtNumero.Focus();
-                    btnCadastrar.Enabled = true; // reabilita pois validação falhou
-                    return;
-                }
-            }
+            // Removida validação de 44 dígitos para boletos — campo agora é livre
 
             if (string.IsNullOrWhiteSpace(txtFornecedor.Text))
             {
