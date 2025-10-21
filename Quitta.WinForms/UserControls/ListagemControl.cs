@@ -36,6 +36,24 @@ namespace Quitta.UserControls
         private int currentPage = 1;
         private int pageSize = 20;
 
+        // Calculate how many rows fit in the DataGridView client area (dynamic page size)
+        private int GetEffectivePageSize()
+        {
+            try
+            {
+                if (dgvListagem == null || dgvListagem.RowTemplate.Height <= 0)
+                    return Math.Max(1, pageSize);
+
+                var available = dgvListagem.ClientSize.Height - dgvListagem.ColumnHeadersHeight;
+                var rows = available / dgvListagem.RowTemplate.Height;
+                return Math.Max(1, rows);
+            }
+            catch
+            {
+                return Math.Max(1, pageSize);
+            }
+        }
+
         // Guarda valor anterior do status para permitir reverter caso necessário
         private StatusItem? prevStatusValue = null;
         private int prevStatusRowIndex = -1;
@@ -53,6 +71,10 @@ namespace Quitta.UserControls
             InitializeComponent();
 
             dataService = new DataService();
+
+            // refresh grid when control or grid size changes so effective page size is recalculated
+            dgvListagem.SizeChanged += (s, e) => RefreshGrid();
+            this.Resize += (s, e) => RefreshGrid();
 
             // configurar eventos do DataGrid e controles
             dgvListagem.KeyDown += DgvListagem_KeyDown;
@@ -162,10 +184,36 @@ namespace Quitta.UserControls
         private void RefreshGrid()
         {
             ApplyFilters();
-            var totalPages = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / pageSize));
+
+            var effectivePageSize = GetEffectivePageSize();
+
+            // Auto-update overdue items: if status is Pendente and vencimento <= today, set to Vencido
+            var today = DateTime.Now.Date;
+            var changed = new List<Item>();
+            // iterate over a snapshot to avoid Collection modified exceptions when event handlers modify the original list
+            foreach (var it in items.ToList())
+            {
+                if (it.Status == StatusItem.Pendente && it.Vencimento.Date <= today)
+                {
+                    it.Status = StatusItem.Vencido;
+                    changed.Add(it);
+                }
+            }
+            if (changed.Count > 0)
+            {
+                // re-apply filters since statuses changed
+                ApplyFilters();
+                // notify listeners (MainForm) so they can persist and refresh shared state
+                foreach (var it in changed)
+                {
+                    try { ItemUpdated?.Invoke(it); } catch { }
+                }
+            }
+
+            var totalPages = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / effectivePageSize));
             if (currentPage > totalPages) currentPage = totalPages;
 
-            var page = filteredItems.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+            var page = filteredItems.Skip((currentPage - 1) * effectivePageSize).Take(effectivePageSize).ToList();
 
             // Project to a display model to include AnexoDisplay and Id and bind as a BindingList so editing works
             displayRows.Clear();
@@ -180,26 +228,50 @@ namespace Quitta.UserControls
                     Valor = i.Valor,
                     Vencimento = i.Vencimento,
                     Status = i.Status,
-                    AnexoDisplay = (i.Attachments != null && i.Attachments.Count > 0) ? i.Attachments[0].FileName : "Sem anexo"
+                    AnexoDisplay = (i.Attachments != null && i.Attachments.Count > 0) ? "Abrir anexo" : "Sem anexo"
                 });
             }
 
             dgvListagem.DataSource = null;
             dgvListagem.DataSource = displayRows;
 
+            // Ensure per-row button text for Anexo column when not bound
+            for (int r = 0; r < dgvListagem.Rows.Count; r++)
+            {
+                var cell = dgvListagem.Rows[r].Cells["colAnexo"] as DataGridViewButtonCell;
+                if (cell != null)
+                {
+                    var val = cell.Value?.ToString();
+                    if (string.IsNullOrEmpty(val))
+                    {
+                        // fallback to display property
+                        var dr = dgvListagem.Rows[r].DataBoundItem;
+                        var prop = dr?.GetType().GetProperty("AnexoDisplay");
+                        var txt = prop?.GetValue(dr)?.ToString() ?? "Sem anexo";
+                        cell.Value = txt;
+                    }
+                    else
+                    {
+                        cell.Value = val;
+                    }
+                }
+            }
+
             UpdatePaginationLabel();
         }
 
         private void UpdatePaginationLabel()
         {
-            var totalPages = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / pageSize));
+            var effectivePageSize = GetEffectivePageSize();
+            var totalPages = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / effectivePageSize));
             lblPagina.Text = $"Página {currentPage} de {totalPages}";
             PageChanged?.Invoke(currentPage);
         }
 
         public void NextPage()
         {
-            if ((currentPage * pageSize) < filteredItems.Count)
+            var effectivePageSize = GetEffectivePageSize();
+            if ((currentPage * effectivePageSize) < filteredItems.Count)
             {
                 currentPage++;
                 RefreshGrid();
@@ -223,7 +295,8 @@ namespace Quitta.UserControls
 
         public void LastPage()
         {
-            currentPage = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / pageSize));
+            var effectivePageSize = GetEffectivePageSize();
+            currentPage = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / effectivePageSize));
             RefreshGrid();
         }
 
@@ -279,6 +352,10 @@ namespace Quitta.UserControls
                             {
                                 cb.DataSource = null;
                                 cb.DataSource = allowed;
+                                // ensure immediate commit when user selects an option
+                                // remove previous handler to avoid duplicates then attach
+                                cb.SelectedIndexChanged -= StatusEditor_SelectedIndexChanged;
+                                cb.SelectedIndexChanged += StatusEditor_SelectedIndexChanged;
                             }
                             catch
                             {
@@ -287,6 +364,22 @@ namespace Quitta.UserControls
                         }
                     }
                 }
+            }
+        }
+
+        // handler to commit edit immediately when user chooses a status in the in-place ComboBox
+        private void StatusEditor_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (dgvListagem.CurrentCell != null && dgvListagem.CurrentCell.OwningColumn == colStatus)
+                {
+                    dgvListagem.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                }
+            }
+            catch
+            {
+                // swallow errors to avoid interrupting UI
             }
         }
 
@@ -337,7 +430,7 @@ namespace Quitta.UserControls
                     item.Status = appliedStatus;
                     var idx = items.FindIndex(i => i.Id == item.Id);
                     if (idx >= 0) items[idx].Status = item.Status;
-                    try { dataService.SaveItems(items); } catch { }
+                    // delegate persistence to MainForm via event
                     ItemUpdated?.Invoke(item);
                     RefreshGrid();
                 }));
@@ -367,9 +460,9 @@ namespace Quitta.UserControls
                 if (res == DialogResult.Yes)
                 {
                     items.RemoveAll(i => i.Id == selected.Id);
-                    try { dataService.SaveItems(items); } catch { }
-                    RefreshGrid();
+                    // notify MainForm to persist changes
                     ItemDeleted?.Invoke(selected);
+                    RefreshGrid();
                 }
             }
         }
@@ -411,27 +504,38 @@ namespace Quitta.UserControls
                 else
                 {
                     // adicionar anexo (apenas um permitido)
+                    // allowed extensions must match cadastro rules
+                    var allowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
                     using var ofd = new OpenFileDialog();
                     ofd.Title = "Selecionar anexo";
-                    ofd.Filter = "Todos os arquivos (*.*)|*.*";
+                    ofd.Filter = "PDF (*.pdf)|*.pdf|Imagens (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|Todos os arquivos (*.*)|*.*";
                     if (ofd.ShowDialog() == DialogResult.OK)
                     {
-                        var dest = dataService.GetAttachmentPath(Path.GetFileName(ofd.FileName));
-                        dest = dataService.GetUniqueAttachmentPath(dest);
-                        try
+                        var ext = Path.GetExtension(ofd.FileName) ?? string.Empty;
+                        if (!allowedExts.Contains(ext.ToLowerInvariant()))
                         {
-                            File.Copy(ofd.FileName, dest);
-                            var attach = new Attachment { Id = Guid.NewGuid().ToString(), FileName = Path.GetFileName(dest), RelativePath = dest, CreatedAt = DateTime.Now };
-                            // only one attachment allowed: replace existing
-                            if (item.Attachments == null) item.Attachments = new List<Attachment>();
-                            else item.Attachments.Clear();
-                            item.Attachments.Add(attach);
-                            dataService.SaveItems(items);
-                            RefreshGrid();
+                            MessageBox.Show("Formato de arquivo inválido. São permitidos: PDF, JPG e PNG.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
-                        catch
+                        else
                         {
-                            MessageBox.Show("Falha ao adicionar anexo.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            var dest = dataService.GetAttachmentPath(Path.GetFileName(ofd.FileName));
+                            dest = dataService.GetUniqueAttachmentPath(dest);
+                            try
+                            {
+                                File.Copy(ofd.FileName, dest);
+                                var attach = new Attachment { Id = Guid.NewGuid().ToString(), FileName = Path.GetFileName(dest), RelativePath = dest, CreatedAt = DateTime.Now };
+                                // only one attachment allowed: replace existing
+                                if (item.Attachments == null) item.Attachments = new List<Attachment>();
+                                else item.Attachments.Clear();
+                                item.Attachments.Add(attach);
+                                // notify MainForm to persist changes
+                                ItemUpdated?.Invoke(item);
+                                RefreshGrid();
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Falha ao adicionar anexo.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
                         }
                     }
                 }
@@ -449,10 +553,9 @@ namespace Quitta.UserControls
                     var idx = items.FindIndex(i => i.Id == edited.Id);
                     if (idx >= 0) items[idx] = edited;
 
-                    try { dataService.SaveItems(items); } catch { }
-
-                    RefreshGrid();
+                    // notify MainForm to persist and refresh other views
                     ItemUpdated?.Invoke(edited);
+                    RefreshGrid();
                 }
             }
             else if (col == colExcluir)
@@ -461,9 +564,8 @@ namespace Quitta.UserControls
                 if (res == DialogResult.Yes)
                 {
                     items.RemoveAll(i => i.Id == item.Id);
-                    try { dataService.SaveItems(items); } catch { }
-                    RefreshGrid();
                     ItemDeleted?.Invoke(item);
+                    RefreshGrid();
                 }
             }
         }
@@ -476,8 +578,9 @@ namespace Quitta.UserControls
             if (txtBusca != null) txtBusca.Clear();
             if (cmbFiltroTipo != null && cmbFiltroTipo.Items.Count > 0) cmbFiltroTipo.SelectedIndex = 0;
             if (cmbFiltroStatus != null && cmbFiltroStatus.Items.Count > 0) cmbFiltroStatus.SelectedIndex = 0;
-            if (dtpFiltroInicio != null) dtpFiltroInicio.Value = DateTime.Now.Date;
-            if (dtpFiltroFim != null) dtpFiltroFim.Value = DateTime.Now.Date;
+            // Do not activate the period filters when clearing: uncheck the date pickers
+            if (dtpFiltroInicio != null && dtpFiltroInicio.ShowCheckBox) dtpFiltroInicio.Checked = false;
+            if (dtpFiltroFim != null && dtpFiltroFim.ShowCheckBox) dtpFiltroFim.Checked = false;
             currentPage = 1;
             RefreshGrid();
         }

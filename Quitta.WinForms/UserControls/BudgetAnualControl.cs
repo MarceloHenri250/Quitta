@@ -34,6 +34,12 @@ namespace Quitta.UserControls
             PopulateBudget();
         }
 
+        // expose budgets for owners to persist (returns the actual list instance)
+        public List<MonthlyBudget> GetBudgets()
+        {
+            return budgets;
+        }
+
         private void PopulateBudget()
         {
             var budgetRows = new List<BudgetMonthRow>();

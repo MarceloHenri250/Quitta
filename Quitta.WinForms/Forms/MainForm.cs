@@ -31,10 +31,13 @@ namespace Quitta.Forms
             // wire budget control event
             budgetAnualControl.BudgetsChanged += () =>
             {
+                // get current budgets from the control (it was the source of the change)
+                budgets = budgetAnualControl.GetBudgets();
                 SaveData();
-                // refresh local cache and other views
-                budgets = dataService.LoadBudgets();
+                // refresh other views
                 dashboardControl.SetData(items, budgets);
+                // ensure control and others are in sync
+                budgetAnualControl.SetData(items, budgets);
             };
 
             LoadData();
@@ -54,6 +57,8 @@ namespace Quitta.Forms
                 dashboardControl.SetData(items, budgets);
                 relatorioControl.SetData(items);
                 listagemControl.SetData(items);
+                // keep budget anual in sync (item status affects paid/pending calculations)
+                budgetAnualControl.SetData(items, budgets);
             };
 
             listagemControl.ItemDeleted += item =>
@@ -64,6 +69,7 @@ namespace Quitta.Forms
                 dashboardControl.SetData(items, budgets);
                 relatorioControl.SetData(items);
                 listagemControl.SetData(items);
+                budgetAnualControl.SetData(items, budgets);
             };
 
             relatorioControl.ExportPdfRequested += () => MessageBox.Show("Exportar PDF não implementado.", "Info");
@@ -153,6 +159,7 @@ namespace Quitta.Forms
             dashboardControl.SetData(items, budgets);
             listagemControl.SetData(items);
             relatorioControl.SetData(items);
+            budgetAnualControl.SetData(items, budgets);
         }
 
         private void LimparFormulario()
