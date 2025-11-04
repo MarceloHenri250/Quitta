@@ -10,6 +10,10 @@ using System.Windows.Forms;
 using Quitta.Models;
 using ClosedXML.Excel;
 using System.IO;
+using System.Drawing.Imaging;
+using PdfSharpCore.Pdf;
+using PdfSharpCore.Drawing;
+using ClosedXML.Excel;
 // removed DataVisualization.Charting to avoid extra package
 
 namespace Quitta.UserControls
@@ -113,8 +117,164 @@ namespace Quitta.UserControls
 
         private void BtnExportPdf_Click(object? sender, EventArgs e)
         {
-            // keep existing event for backwards compatibility
-            ExportPdfRequested?.Invoke();
+            // export PDF with chart image and table
+            if (filteredItems == null || filteredItems.Count == 0)
+            {
+                MessageBox.Show("Nenhum item para exportar.", "Exportar PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var defaultFile = $"relatorio_{timestamp}.pdf";
+
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "PDF|*.pdf";
+                sfd.FileName = defaultFile;
+                if (sfd.ShowDialog() != DialogResult.OK) return;
+
+                try
+                {
+                    // render chart at a larger size to make it legible in PDF
+                    var originalSize = chartStatus.Size;
+                    // render at reasonable high resolution
+                    var renderWidth = 1200;
+                    var renderHeight = Math.Max(480, originalSize.Height * renderWidth / Math.Max(1, originalSize.Width));
+                    Bitmap bmp;
+                    try
+                    {
+                        chartStatus.Size = new Size(renderWidth, renderHeight);
+                        bmp = new Bitmap(renderWidth, renderHeight);
+                        chartStatus.DrawToBitmap(bmp, new Rectangle(0, 0, renderWidth, renderHeight));
+                    }
+                    finally
+                    {
+                        chartStatus.Size = originalSize;
+                    }
+
+                    using (var imgStream = new MemoryStream())
+                    {
+                        bmp.Save(imgStream, ImageFormat.Png);
+                        imgStream.Position = 0;
+
+                        using (var pdf = new PdfDocument())
+                        {
+                            var page = pdf.AddPage();
+                            page.Size = PdfSharpCore.PageSize.A4;
+                            var gfx = XGraphics.FromPdfPage(page);
+
+                            var titleFont = new XFont("Segoe UI", 16, XFontStyle.Bold);
+                            var font = new XFont("Segoe UI", 10, XFontStyle.Regular);
+                            var headerFont = new XFont("Segoe UI", 10, XFontStyle.Bold);
+
+                            double margin = 40;
+                            double y = 30;
+
+                            gfx.DrawString("Relatório", titleFont, XBrushes.Black, new XRect(margin, y, page.Width - margin * 2, 24), XStringFormats.TopLeft);
+
+                            // generation timestamp
+                            var genText = "Gerado em: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+                            gfx.DrawString(genText, font, XBrushes.Gray, new XRect(margin, y + 20, page.Width - margin * 2, 18), XStringFormats.TopLeft);
+
+                            y += 44;
+
+                            // draw stats block
+                            gfx.DrawString($"Total Geral: {lblTotalValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
+                            gfx.DrawString(lblTotalCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
+                            y += 16;
+                            gfx.DrawString($"A Pagar: {lblToPayValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
+                            gfx.DrawString(lblToPayCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
+                            y += 16;
+                            gfx.DrawString($"Pagos: {lblPaidValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
+                            gfx.DrawString(lblPaidCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
+                            y += 16;
+                            gfx.DrawString($"Vencidos: {lblOverdueValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
+                            gfx.DrawString(lblOverdueCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
+
+                            // space before chart
+                            y += 28;
+
+                            // draw chart full width (below stats)
+                            using (var ximg = XImage.FromStream(() => new MemoryStream(imgStream.ToArray())))
+                            {
+                                double maxImgWidth = page.Width - margin * 2;
+                                double imgWidth = Math.Min(maxImgWidth, 520);
+                                double imgHeight = ximg.PixelHeight * imgWidth / ximg.PixelWidth;
+                                double imgX = margin + (maxImgWidth - imgWidth) / 2;
+                                double imgY = y;
+                                gfx.DrawImage(ximg, imgX, imgY, imgWidth, imgHeight);
+                                y = imgY + imgHeight + 12;
+                            }
+
+                            // table header
+                            double tableTop = y + 6;
+                            double colLeft = margin;
+                            double tableWidth = page.Width - margin * 2;
+
+                            double wTipo = tableWidth * 0.08;
+                            double wNumero = tableWidth * 0.12;
+                            double wFornecedor = tableWidth * 0.40;
+                            double wVenc = tableWidth * 0.12;
+                            double wValor = tableWidth * 0.14;
+                            double wStatus = tableWidth * 0.14;
+
+                            double x = colLeft;
+
+                            // header background
+                            gfx.DrawRectangle(XBrushes.LightGray, x, tableTop, wTipo + wNumero + wFornecedor + wVenc + wValor + wStatus, 18);
+
+                            gfx.DrawRectangle(XPens.Black, x, tableTop, wTipo, 18);
+                            gfx.DrawString("Tipo", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wTipo - 4, 14), XStringFormats.TopLeft); x += wTipo;
+                            gfx.DrawRectangle(XPens.Black, x, tableTop, wNumero, 18);
+                            gfx.DrawString("Número", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wNumero - 4, 14), XStringFormats.TopLeft); x += wNumero;
+                            gfx.DrawRectangle(XPens.Black, x, tableTop, wFornecedor, 18);
+                            gfx.DrawString("Fornecedor", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wFornecedor - 4, 14), XStringFormats.TopLeft); x += wFornecedor;
+                            gfx.DrawRectangle(XPens.Black, x, tableTop, wVenc, 18);
+                            gfx.DrawString("Vencimento", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wVenc - 4, 14), XStringFormats.TopLeft); x += wVenc;
+                            gfx.DrawRectangle(XPens.Black, x, tableTop, wValor, 18);
+                            gfx.DrawString("Valor", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wValor - 4, 14), XStringFormats.TopLeft); x += wValor;
+                            gfx.DrawRectangle(XPens.Black, x, tableTop, wStatus, 18);
+                            gfx.DrawString("Status", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wStatus - 4, 14), XStringFormats.TopLeft);
+
+                            double rowY = tableTop + 18;
+                            double lineHeight = 14;
+
+                            foreach (var it in filteredItems)
+                            {
+                                if (rowY + lineHeight > page.Height - margin)
+                                {
+                                    page = pdf.AddPage();
+                                    gfx = XGraphics.FromPdfPage(page);
+                                    rowY = margin;
+                                }
+
+                                x = colLeft;
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wTipo, lineHeight); gfx.DrawString(it.Tipo.ToString(), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wTipo - 4, lineHeight), XStringFormats.TopLeft); x += wTipo;
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wNumero, lineHeight); gfx.DrawString(it.Numero, font, XBrushes.Black, new XRect(x + 2, rowY + 1, wNumero - 4, lineHeight), XStringFormats.TopLeft); x += wNumero;
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wFornecedor, lineHeight); gfx.DrawString(it.Fornecedor, font, XBrushes.Black, new XRect(x + 2, rowY + 1, wFornecedor - 4, lineHeight), XStringFormats.TopLeft); x += wFornecedor;
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wVenc, lineHeight); gfx.DrawString(it.Vencimento.ToString("dd/MM/yyyy"), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wVenc - 4, lineHeight), XStringFormats.TopLeft); x += wVenc;
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wValor, lineHeight); gfx.DrawString(it.Valor.ToString("C"), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wValor - 4, lineHeight), XStringFormats.TopLeft); x += wValor;
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wStatus, lineHeight); gfx.DrawString(it.Status.ToString(), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wStatus - 4, lineHeight), XStringFormats.TopLeft);
+
+                                rowY += lineHeight + 4;
+                            }
+
+                            // save PDF
+                            using (var fs = File.OpenWrite(sfd.FileName))
+                            {
+                                pdf.Save(fs);
+                            }
+                        }
+                    }
+
+                    MessageBox.Show("Exportação para PDF concluída com sucesso.", "Exportar PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    ExportPdfRequested?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erro ao exportar PDF: {ex.Message}", "Exportar PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         private void BtnExportExcel_Click(object? sender, EventArgs e)
@@ -126,10 +286,13 @@ namespace Quitta.UserControls
                 return;
             }
 
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var defaultFile = $"relatorio_{timestamp}.xlsx";
+
             using (var sfd = new SaveFileDialog())
             {
                 sfd.Filter = "Arquivos Excel|*.xlsx";
-                sfd.FileName = "Relatorio.xlsx";
+                sfd.FileName = defaultFile;
                 if (sfd.ShowDialog() != DialogResult.OK) return;
 
                 try
@@ -159,6 +322,17 @@ namespace Quitta.UserControls
 
                         // format valor column
                         ws.Column(5).Style.NumberFormat.Format = "R$ #,##0.00";
+
+                        // style header
+                        var headerRange = ws.Range(1, 1, 1, 6);
+                        headerRange.Style.Font.Bold = true;
+                        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                        // apply borders to entire data range
+                        var dataRange = ws.Range(1, 1, row - 1, 6);
+                        dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
                         ws.Columns().AdjustToContents();
 
                         wb.SaveAs(sfd.FileName);

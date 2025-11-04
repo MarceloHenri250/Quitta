@@ -72,8 +72,9 @@ namespace Quitta.Forms
                 budgetAnualControl.SetData(items, budgets);
             };
 
-            relatorioControl.ExportPdfRequested += () => MessageBox.Show("Exportar PDF não implementado.", "Info");
-            relatorioControl.ExportExcelRequested += () => MessageBox.Show("Exportar Excel não implementado.", "Info");
+            relatorioControl.ExportPdfRequested += () => { };
+            // Export handled inside RelatorioControl; keep event for compatibility but no placeholder message
+            relatorioControl.ExportExcelRequested += () => { }; 
             relatorioControl.FilterApplied += (filtered) => listagemControl.SetData(filtered);
 
             // populate controls with data
