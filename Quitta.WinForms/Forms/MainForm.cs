@@ -82,7 +82,8 @@ namespace Quitta.Forms
             relatorioControl.SetData(items);
         }
 
-        private void LoadData()
+        // Make LoadData public so other controls (ConfiguracaoControl) can trigger reload when settings change
+        public void LoadData()
         {
             items = dataService.LoadItems();
             budgets = dataService.LoadBudgets();

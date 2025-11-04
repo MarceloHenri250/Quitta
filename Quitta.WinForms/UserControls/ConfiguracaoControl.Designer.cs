@@ -302,7 +302,7 @@
             // lblStart
             // 
             lblStart.AutoSize = true;
-            lblStart.Location = new Point(35, 175);
+            lblStart.Location = new Point(35, 182);
             lblStart.Name = "lblStart";
             lblStart.Size = new Size(82, 20);
             lblStart.TabIndex = 6;
@@ -310,7 +310,7 @@
             // 
             // nudCustomStartYear
             // 
-            nudCustomStartYear.Location = new Point(123, 172);
+            nudCustomStartYear.Location = new Point(123, 179);
             nudCustomStartYear.Maximum = new decimal(new int[] { 2100, 0, 0, 0 });
             nudCustomStartYear.Minimum = new decimal(new int[] { 1900, 0, 0, 0 });
             nudCustomStartYear.Name = "nudCustomStartYear";
@@ -321,7 +321,7 @@
             // lblEnd
             // 
             lblEnd.AutoSize = true;
-            lblEnd.Location = new Point(209, 175);
+            lblEnd.Location = new Point(209, 182);
             lblEnd.Name = "lblEnd";
             lblEnd.Size = new Size(74, 20);
             lblEnd.TabIndex = 8;
@@ -329,7 +329,7 @@
             // 
             // nudCustomEndYear
             // 
-            nudCustomEndYear.Location = new Point(289, 173);
+            nudCustomEndYear.Location = new Point(289, 180);
             nudCustomEndYear.Maximum = new decimal(new int[] { 2100, 0, 0, 0 });
             nudCustomEndYear.Minimum = new decimal(new int[] { 1900, 0, 0, 0 });
             nudCustomEndYear.Name = "nudCustomEndYear";

@@ -86,6 +86,17 @@ namespace Quitta.UserControls
 
             // Reiniciar serviço de backup
             Quitta.Services.BackupManager.Instance.Restart();
+
+            // Notify main form to reload data so budget settings take effect immediately
+            try
+            {
+                var main = Application.OpenForms.OfType<Quitta.Forms.MainForm>().FirstOrDefault();
+                main?.LoadData();
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         private async void BtnChooseBackupPath_Click(object sender, EventArgs e)

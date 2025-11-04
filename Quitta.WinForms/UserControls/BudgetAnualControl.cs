@@ -43,14 +43,54 @@ namespace Quitta.UserControls
         private void PopulateBudget()
         {
             var budgetRows = new List<BudgetMonthRow>();
-            var year = DateTime.Now.Year;
 
-            // Build months for the current calendar year (Jan..Dec)
-            for (int month = 1; month <= 12; month++)
+            // Determine range of months to display based on settings
+            string mode = Properties.Settings.Default.BudgetMode ?? "CurrentYear";
+            DateTime startMonth;
+            DateTime endMonth;
+            var now = DateTime.Now;
+
+            switch (mode)
             {
-                var monthDate = new DateTime(year, month, 1);
-                var monthKey = monthDate.ToString("yyyy-MM");
-                var monthName = monthDate.ToString("MMMM 'de' yyyy", CultureInfo.CurrentCulture);
+                case "CurrentPlusNext":
+                    // show current year and next year
+                    startMonth = new DateTime(now.Year, 1, 1);
+                    endMonth = new DateTime(now.Year + 1, 12, 1);
+                    break;
+                case "Last2":
+                    // last two full years (previous and current)
+                    startMonth = new DateTime(now.Year - 1, 1, 1);
+                    endMonth = new DateTime(now.Year, 12, 1);
+                    break;
+                case "Last3":
+                    // last three full years
+                    startMonth = new DateTime(now.Year - 2, 1, 1);
+                    endMonth = new DateTime(now.Year, 12, 1);
+                    break;
+                case "Custom":
+                    int sy = Properties.Settings.Default.BudgetCustomStartYear;
+                    int ey = Properties.Settings.Default.BudgetCustomEndYear;
+                    if (sy <= 0) sy = now.Year;
+                    if (ey <= 0) ey = now.Year;
+                    if (sy > ey) // swap if inverted
+                    {
+                        var t = sy; sy = ey; ey = t;
+                    }
+                    startMonth = new DateTime(sy, 1, 1);
+                    endMonth = new DateTime(ey, 12, 1);
+                    break;
+                case "CurrentYear":
+                default:
+                    startMonth = new DateTime(now.Year, 1, 1);
+                    endMonth = new DateTime(now.Year, 12, 1);
+                    break;
+            }
+
+            // Build months from startMonth to endMonth inclusive
+            for (var month = startMonth; month <= endMonth; month = month.AddMonths(1))
+            {
+                var monthKey = month.ToString("yyyy-MM");
+                var monthName = month.ToString("MMMM 'de' yyyy", CultureInfo.CurrentCulture);
 
                 var budget = budgets.FirstOrDefault(b => b.Month == monthKey)?.Budget ?? 0;
                 var paid = items
