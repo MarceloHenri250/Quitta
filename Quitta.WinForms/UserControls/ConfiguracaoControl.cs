@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Quitta.UserControls
@@ -19,6 +20,9 @@ namespace Quitta.UserControls
             LoadSettingsToControls();
             UpdateLastBackupLabel();
             ToggleCustomYearsControls();
+
+            // Inicializa gerenciador de backup
+            Quitta.Services.BackupManager.Instance.InitializeFromSettings();
         }
 
         private void LoadSettingsToControls()
@@ -79,9 +83,12 @@ namespace Quitta.UserControls
             Properties.Settings.Default.NotifyDesktop = chkNotifyDesktop.Checked;
 
             Properties.Settings.Default.Save();
+
+            // Reiniciar serviço de backup
+            Quitta.Services.BackupManager.Instance.Restart();
         }
 
-        private void BtnChooseBackupPath_Click(object sender, EventArgs e)
+        private async void BtnChooseBackupPath_Click(object sender, EventArgs e)
         {
             using (var dlg = new FolderBrowserDialog())
             {
@@ -96,27 +103,13 @@ namespace Quitta.UserControls
             }
         }
 
-        private void BtnBackupNow_Click(object sender, EventArgs e)
+        private async void BtnBackupNow_Click(object sender, EventArgs e)
         {
-            // Simulação de backup: criar um arquivo com timestamp na pasta
             try
             {
-                if (string.IsNullOrWhiteSpace(txtBackupPath.Text))
-                {
-                    MessageBox.Show("Defina o caminho do backup antes de executar.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                Directory.CreateDirectory(txtBackupPath.Text);
-                string file = System.IO.Path.Combine(txtBackupPath.Text, $"backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak");
-                File.WriteAllText(file, "Simulated backup content");
-
-                Properties.Settings.Default.LastBackupUtc = DateTime.UtcNow;
-                Properties.Settings.Default.Save();
-
+                await Quitta.Services.BackupManager.Instance.PerformBackupAsync();
                 UpdateLastBackupLabel();
-
-                MessageBox.Show("Backup concluído (simulado).", "Backup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Backup concluído.", "Backup", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -161,6 +154,7 @@ namespace Quitta.UserControls
             Properties.Settings.Default.Reset();
             LoadSettingsToControls();
             UpdateLastBackupLabel();
+            Quitta.Services.BackupManager.Instance.Restart();
             MessageBox.Show("Padrões restaurados.", "Restaurar", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }

@@ -165,9 +165,9 @@
             // 
             // btnChooseBackupPath
             // 
-            btnChooseBackupPath.Location = new Point(545, 68);
+            btnChooseBackupPath.Location = new Point(550, 64);
             btnChooseBackupPath.Name = "btnChooseBackupPath";
-            btnChooseBackupPath.Size = new Size(100, 29);
+            btnChooseBackupPath.Size = new Size(100, 39);
             btnChooseBackupPath.TabIndex = 3;
             btnChooseBackupPath.Text = "Escolher";
             btnChooseBackupPath.Click += BtnChooseBackupPath_Click;
@@ -193,7 +193,7 @@
             // lblKeep
             // 
             lblKeep.AutoSize = true;
-            lblKeep.Location = new Point(240, 110);
+            lblKeep.Location = new Point(261, 109);
             lblKeep.Name = "lblKeep";
             lblKeep.Size = new Size(172, 20);
             lblKeep.TabIndex = 6;
@@ -201,7 +201,7 @@
             // 
             // nudKeepLastBackups
             // 
-            nudKeepLastBackups.Location = new Point(418, 107);
+            nudKeepLastBackups.Location = new Point(451, 107);
             nudKeepLastBackups.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             nudKeepLastBackups.Name = "nudKeepLastBackups";
             nudKeepLastBackups.Size = new Size(60, 27);
@@ -221,7 +221,7 @@
             // 
             btnBackupNow.Location = new Point(15, 185);
             btnBackupNow.Name = "btnBackupNow";
-            btnBackupNow.Size = new Size(220, 30);
+            btnBackupNow.Size = new Size(220, 44);
             btnBackupNow.TabIndex = 9;
             btnBackupNow.Text = "Fazer Backup Manual Agora";
             btnBackupNow.Click += BtnBackupNow_Click;
@@ -406,19 +406,19 @@
             // 
             // btnSaveAll
             // 
-            btnSaveAll.Location = new Point(440, 465);
+            btnSaveAll.Location = new Point(440, 456);
             btnSaveAll.Name = "btnSaveAll";
             btnSaveAll.RightToLeft = RightToLeft.No;
-            btnSaveAll.Size = new Size(200, 32);
+            btnSaveAll.Size = new Size(200, 41);
             btnSaveAll.TabIndex = 1;
             btnSaveAll.Text = "Salvar Configurações";
             btnSaveAll.Click += BtnSaveAll_Click;
             // 
             // btnRestoreDefaults
             // 
-            btnRestoreDefaults.Location = new Point(200, 465);
+            btnRestoreDefaults.Location = new Point(200, 456);
             btnRestoreDefaults.Name = "btnRestoreDefaults";
-            btnRestoreDefaults.Size = new Size(150, 32);
+            btnRestoreDefaults.Size = new Size(150, 41);
             btnRestoreDefaults.TabIndex = 2;
             btnRestoreDefaults.Text = "Restaurar Padrões";
             btnRestoreDefaults.Click += BtnRestoreDefaults_Click;

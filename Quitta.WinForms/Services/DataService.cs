@@ -117,6 +117,9 @@ namespace Quitta.Services
         }
         #endregion
 
+        // Expose o caminho da pasta de dados para backups
+        public string GetDataFolder() => dataFolder;
+
         #region Itens (Load/Save)
         // Carrega a lista de itens do arquivo. Se não existir, cria um items.json vazio e retorna lista vazia.
         public List<Item> LoadItems()

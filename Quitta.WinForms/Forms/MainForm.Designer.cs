@@ -44,6 +44,7 @@
             tabRelatorios = new TabPage();
             relatorioControl = new Quitta.UserControls.RelatorioControl();
             configuracaoControl = new TabPage();
+            configuracaoUserControl = new Quitta.UserControls.ConfiguracaoControl();
             panelHeader.SuspendLayout();
             tabControl.SuspendLayout();
             tabDashboard.SuspendLayout();
@@ -51,6 +52,7 @@
             tabCadastro.SuspendLayout();
             tabListagem.SuspendLayout();
             tabRelatorios.SuspendLayout();
+            configuracaoControl.SuspendLayout();
             SuspendLayout();
             // 
             // panelHeader
@@ -137,10 +139,10 @@
             // tabBudget
             // 
             tabBudget.Controls.Add(budgetAnualControl);
-            tabBudget.Location = new Point(4, 32);
+            tabBudget.Location = new Point(4, 29);
             tabBudget.Name = "tabBudget";
             tabBudget.Padding = new Padding(3);
-            tabBudget.Size = new Size(1374, 737);
+            tabBudget.Size = new Size(192, 67);
             tabBudget.TabIndex = 1;
             tabBudget.Text = "Budget";
             tabBudget.UseVisualStyleBackColor = true;
@@ -150,7 +152,7 @@
             budgetAnualControl.Dock = DockStyle.Fill;
             budgetAnualControl.Location = new Point(3, 3);
             budgetAnualControl.Name = "budgetAnualControl";
-            budgetAnualControl.Size = new Size(1368, 731);
+            budgetAnualControl.Size = new Size(186, 61);
             budgetAnualControl.TabIndex = 0;
             // 
             // tabCadastro
@@ -166,7 +168,6 @@
             // 
             // cadastrarControl
             // 
-            cadastrarControl.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             cadastrarControl.Dock = DockStyle.Fill;
             cadastrarControl.Location = new Point(3, 3);
             cadastrarControl.Name = "cadastrarControl";
@@ -195,10 +196,10 @@
             // tabRelatorios
             // 
             tabRelatorios.Controls.Add(relatorioControl);
-            tabRelatorios.Location = new Point(4, 32);
+            tabRelatorios.Location = new Point(4, 29);
             tabRelatorios.Name = "tabRelatorios";
             tabRelatorios.Padding = new Padding(3);
-            tabRelatorios.Size = new Size(1374, 737);
+            tabRelatorios.Size = new Size(192, 67);
             tabRelatorios.TabIndex = 5;
             tabRelatorios.Text = "Relatórios";
             tabRelatorios.UseVisualStyleBackColor = true;
@@ -209,11 +210,12 @@
             relatorioControl.Location = new Point(3, 3);
             relatorioControl.Name = "relatorioControl";
             relatorioControl.Padding = new Padding(6);
-            relatorioControl.Size = new Size(1368, 731);
+            relatorioControl.Size = new Size(186, 61);
             relatorioControl.TabIndex = 0;
             // 
             // configuracaoControl
             // 
+            configuracaoControl.Controls.Add(configuracaoUserControl);
             configuracaoControl.Location = new Point(4, 32);
             configuracaoControl.Name = "configuracaoControl";
             configuracaoControl.Padding = new Padding(3);
@@ -221,6 +223,15 @@
             configuracaoControl.TabIndex = 6;
             configuracaoControl.Text = "Configurações";
             configuracaoControl.UseVisualStyleBackColor = true;
+            // 
+            // configuracaoUserControl
+            // 
+            configuracaoUserControl.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            configuracaoUserControl.Dock = DockStyle.Fill;
+            configuracaoUserControl.Location = new Point(3, 3);
+            configuracaoUserControl.Name = "configuracaoUserControl";
+            configuracaoUserControl.Size = new Size(1368, 731);
+            configuracaoUserControl.TabIndex = 0;
             // 
             // MainForm
             // 
@@ -241,6 +252,7 @@
             tabCadastro.ResumeLayout(false);
             tabListagem.ResumeLayout(false);
             tabRelatorios.ResumeLayout(false);
+            configuracaoControl.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -287,6 +299,7 @@
         private Quitta.UserControls.CadastrarControl cadastrarControl;
         private Quitta.UserControls.ListagemControl listagemControl;
         private Quitta.UserControls.RelatorioControl relatorioControl;
+        private Quitta.UserControls.ConfiguracaoControl configuracaoUserControl;
         private Panel panelFiltros;
         private Label lblBusca;
         private TextBox txtBusca;
