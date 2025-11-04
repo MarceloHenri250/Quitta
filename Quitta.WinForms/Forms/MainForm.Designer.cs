@@ -43,6 +43,7 @@
             listagemControl = new Quitta.UserControls.ListagemControl();
             tabRelatorios = new TabPage();
             relatorioControl = new Quitta.UserControls.RelatorioControl();
+            configuracaoControl = new TabPage();
             panelHeader.SuspendLayout();
             tabControl.SuspendLayout();
             tabDashboard.SuspendLayout();
@@ -105,6 +106,7 @@
             tabControl.Controls.Add(tabCadastro);
             tabControl.Controls.Add(tabListagem);
             tabControl.Controls.Add(tabRelatorios);
+            tabControl.Controls.Add(configuracaoControl);
             tabControl.Dock = DockStyle.Fill;
             tabControl.Font = new Font("Segoe UI", 10F);
             tabControl.Location = new Point(0, 80);
@@ -138,7 +140,7 @@
             tabBudget.Location = new Point(4, 32);
             tabBudget.Name = "tabBudget";
             tabBudget.Padding = new Padding(3);
-            tabBudget.Size = new Size(192, 64);
+            tabBudget.Size = new Size(1374, 737);
             tabBudget.TabIndex = 1;
             tabBudget.Text = "Budget";
             tabBudget.UseVisualStyleBackColor = true;
@@ -148,7 +150,7 @@
             budgetAnualControl.Dock = DockStyle.Fill;
             budgetAnualControl.Location = new Point(3, 3);
             budgetAnualControl.Name = "budgetAnualControl";
-            budgetAnualControl.Size = new Size(186, 58);
+            budgetAnualControl.Size = new Size(1368, 731);
             budgetAnualControl.TabIndex = 0;
             // 
             // tabCadastro
@@ -157,7 +159,7 @@
             tabCadastro.Location = new Point(4, 32);
             tabCadastro.Name = "tabCadastro";
             tabCadastro.Padding = new Padding(3);
-            tabCadastro.Size = new Size(192, 64);
+            tabCadastro.Size = new Size(1374, 737);
             tabCadastro.TabIndex = 2;
             tabCadastro.Text = "Cadastrar";
             tabCadastro.UseVisualStyleBackColor = true;
@@ -168,7 +170,7 @@
             cadastrarControl.Dock = DockStyle.Fill;
             cadastrarControl.Location = new Point(3, 3);
             cadastrarControl.Name = "cadastrarControl";
-            cadastrarControl.Size = new Size(186, 58);
+            cadastrarControl.Size = new Size(1368, 731);
             cadastrarControl.TabIndex = 0;
             // 
             // tabListagem
@@ -177,7 +179,7 @@
             tabListagem.Location = new Point(4, 32);
             tabListagem.Name = "tabListagem";
             tabListagem.Padding = new Padding(3);
-            tabListagem.Size = new Size(192, 64);
+            tabListagem.Size = new Size(1374, 737);
             tabListagem.TabIndex = 3;
             tabListagem.Text = "Listagem";
             tabListagem.UseVisualStyleBackColor = true;
@@ -187,7 +189,7 @@
             listagemControl.Dock = DockStyle.Fill;
             listagemControl.Location = new Point(3, 3);
             listagemControl.Name = "listagemControl";
-            listagemControl.Size = new Size(186, 58);
+            listagemControl.Size = new Size(1368, 731);
             listagemControl.TabIndex = 0;
             // 
             // tabRelatorios
@@ -209,6 +211,16 @@
             relatorioControl.Padding = new Padding(6);
             relatorioControl.Size = new Size(1368, 731);
             relatorioControl.TabIndex = 0;
+            // 
+            // configuracaoControl
+            // 
+            configuracaoControl.Location = new Point(4, 32);
+            configuracaoControl.Name = "configuracaoControl";
+            configuracaoControl.Padding = new Padding(3);
+            configuracaoControl.Size = new Size(1374, 737);
+            configuracaoControl.TabIndex = 6;
+            configuracaoControl.Text = "Configurações";
+            configuracaoControl.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
@@ -322,5 +334,6 @@
         private DataGridViewButtonColumn dataGridViewButtonColumn1;
         private DataGridViewButtonColumn dataGridViewButtonColumn2;
         private DataGridViewButtonColumn dataGridViewButtonColumn3;
+        private TabPage configuracaoControl;
     }
 }
