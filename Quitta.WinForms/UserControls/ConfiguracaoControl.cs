@@ -87,6 +87,9 @@ namespace Quitta.UserControls
             // Reiniciar serviço de backup
             Quitta.Services.BackupManager.Instance.Restart();
 
+            // Restart notification manager to apply new settings
+            Quitta.Services.NotificationManager.Instance.InitializeFromSettings();
+
             // Notify main form to reload data so budget settings take effect immediately
             try
             {
@@ -166,6 +169,8 @@ namespace Quitta.UserControls
             LoadSettingsToControls();
             UpdateLastBackupLabel();
             Quitta.Services.BackupManager.Instance.Restart();
+            // Restart notification manager
+            Quitta.Services.NotificationManager.Instance.InitializeFromSettings();
             MessageBox.Show("Padrões restaurados.", "Restaurar", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
