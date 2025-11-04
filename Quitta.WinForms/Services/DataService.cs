@@ -5,36 +5,42 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Quitta.Services
 {
+    // Serviço responsável por carregar/salvar dados do aplicativo (itens, orçamentos, configurações e anexos)
     public class DataService
     {
+        #region Paths e pastas
+        // Pasta base em %AppData%\SistemaFinanceiro
         private static string appRootFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "SistemaFinanceiro"
         );
 
-        // New data folder under app root
+        // Pasta de dados dentro da pasta da aplicação
         private static string dataFolder = Path.Combine(appRootFolder, "data");
 
+        // Arquivos de dados
         private static string itemsFile = Path.Combine(dataFolder, "items.json");
         private static string budgetsFile = Path.Combine(dataFolder, "budgets.json");
         private static string settingsFile = Path.Combine(dataFolder, "settings.json");
         private static string attachmentsFolder = Path.Combine(dataFolder, "attachments");
+        #endregion
 
+        #region Construtor e migração
         public DataService()
         {
-            // ensure new folders exist
+            // Garante que as pastas de dados existam
             if (!Directory.Exists(dataFolder))
                 Directory.CreateDirectory(dataFolder);
             if (!Directory.Exists(attachmentsFolder))
                 Directory.CreateDirectory(attachmentsFolder);
 
-            // Migrate existing files from old location (appRootFolder) if present and not yet migrated
+            // Tenta migrar dados legados que ficavam diretamente em appRootFolder
             try
             {
-                // old paths (legacy) were directly under appRootFolder
                 var oldItems = Path.Combine(appRootFolder, "items.json");
                 var oldBudgets = Path.Combine(appRootFolder, "budgets.json");
                 var oldSettings = Path.Combine(appRootFolder, "settings.json");
@@ -42,7 +48,7 @@ namespace Quitta.Services
 
                 if (Directory.Exists(appRootFolder) && (Directory.Exists(oldAttachments) || File.Exists(oldItems) || File.Exists(oldBudgets) || File.Exists(oldSettings)))
                 {
-                    // move files if new ones don't already exist
+                    // Move os arquivos para o novo local se ainda não existirem no destino
                     if (File.Exists(oldItems) && !File.Exists(itemsFile))
                         File.Move(oldItems, itemsFile);
                     if (File.Exists(oldBudgets) && !File.Exists(budgetsFile))
@@ -50,13 +56,13 @@ namespace Quitta.Services
                     if (File.Exists(oldSettings) && !File.Exists(settingsFile))
                         File.Move(oldSettings, settingsFile);
 
-                    // move attachments files into new attachments folder
+                    // Move os arquivos de anexos para a nova pasta de anexos
                     if (Directory.Exists(oldAttachments))
                     {
                         foreach (var f in Directory.GetFiles(oldAttachments))
                         {
                             var dest = Path.Combine(attachmentsFolder, Path.GetFileName(f));
-                            // ensure unique
+                            // Garante nome único para evitar sobrescrever arquivos
                             if (File.Exists(dest))
                             {
                                 dest = GetUniqueAttachmentPath(dest);
@@ -64,7 +70,7 @@ namespace Quitta.Services
                             File.Move(f, dest);
                         }
 
-                        // optionally remove old attachments directory if empty
+                        // Remove a pasta antiga se estiver vazia
                         try
                         {
                             if (Directory.GetFiles(oldAttachments).Length == 0 && Directory.GetDirectories(oldAttachments).Length == 0)
@@ -76,14 +82,16 @@ namespace Quitta.Services
             }
             catch
             {
-                // ignore migration errors
+                // Ignora falhas na migração para não impedir a inicialização do app
             }
         }
+        #endregion
 
-        // Retorna a pasta onde anexos são armazenados
+        #region Anexos
+        // Retorna a pasta onde os anexos são armazenados
         public string GetAttachmentsFolder() => attachmentsFolder;
 
-        // Retorna um path completo para um nome de arquivo dentro da pasta de anexos
+        // Retorna um caminho completo para um arquivo dentro da pasta de anexos
         public string GetAttachmentPath(string fileName)
         {
             return Path.Combine(attachmentsFolder, fileName);
@@ -107,31 +115,49 @@ namespace Quitta.Services
 
             return candidate;
         }
+        #endregion
 
-        //Items
+        #region Itens (Load/Save)
+        // Carrega a lista de itens do arquivo. Se não existir, cria um items.json vazio e retorna lista vazia.
         public List<Item> LoadItems()
         {
             if (!File.Exists(itemsFile))
-                return GetDefaultItems();
+            {
+                var empty = new List<Item>();
+                try { SaveItems(empty); } catch { }
+                return empty;
+            }
 
             try
             {
                 var json = File.ReadAllText(itemsFile);
-                return JsonConvert.DeserializeObject<List<Item>>(json) ?? GetDefaultItems();
+                var items = JsonConvert.DeserializeObject<List<Item>>(json);
+                if (items == null)
+                {
+                    var empty = new List<Item>();
+                    try { SaveItems(empty); } catch { }
+                    return empty;
+                }
+
+                return items;
             }
             catch
             {
-                return GetDefaultItems();
+                var empty = new List<Item>();
+                try { SaveItems(empty); } catch { }
+                return empty;
             }
         }
 
+        // Salva a lista de itens no arquivo (sobrescreve)
         public void SaveItems(List<Item> items)
         {
             var json = JsonConvert.SerializeObject(items, Formatting.Indented);
             File.WriteAllText(itemsFile, json);
         }
+        #endregion
 
-        //Budgets
+        #region Orçamentos (Load/Save)
         public List<MonthlyBudget> LoadBudgets()
         {
             if (!File.Exists(budgetsFile))
@@ -153,8 +179,9 @@ namespace Quitta.Services
             var json = JsonConvert.SerializeObject(budgets, Formatting.Indented);
             File.WriteAllText(budgetsFile, json);
         }
+        #endregion
 
-        //Settings
+        #region Configurações (Load/Save)
         public NotificationSettings LoadSettings()
         {
             if (!File.Exists(settingsFile))
@@ -176,43 +203,14 @@ namespace Quitta.Services
             var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
             File.WriteAllText(settingsFile, json);
         }
+        #endregion
 
-        //Default Data
+        #region Dados padrão
+        // Retorna uma lista vazia — itens padrão removidos conforme pedido do usuário
         private List<Item> GetDefaultItems()
         {
-            return new List<Item>
-            {
-                new Item
-                {
-                    Id = "1",
-                    Tipo = TipoItem.Boleto,
-                    Numero = "12345678",
-                    Fornecedor = "Energia Elétrica SA",
-                    Valor = 450.00m,
-                    Vencimento = DateTime.Now.AddDays(5),
-                    Status = StatusItem.Pendente
-                },
-                new Item
-                {
-                    Id = "2",
-                    Tipo = TipoItem.Nota,
-                    Numero = "NF-001234",
-                    Fornecedor = "Fornecedor ABC Ltda",
-                    Valor = 1250.50m,
-                    Vencimento = DateTime.Now.AddDays(10),
-                    Status = StatusItem.Pendente
-                },
-                new Item
-                {
-                    Id = "3",
-                    Tipo = TipoItem.Boleto,
-                    Numero = "87654321",
-                    Fornecedor = "Água e Saneamento",
-                    Valor = 180.00m,
-                    Vencimento = DateTime.Now.AddDays(15),
-                    Status = StatusItem.Pendente
-                }
-            };
+            // Sem itens padrões: o usuário irá cadastrar manualmente
+            return new List<Item>();
         }
 
         private List<MonthlyBudget> GetDefaultBudgets()
@@ -236,5 +234,6 @@ namespace Quitta.Services
                 DesktopNotifications = true
             };
         }
+        #endregion
     }
 }

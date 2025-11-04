@@ -138,7 +138,7 @@
             tabBudget.Location = new Point(4, 32);
             tabBudget.Name = "tabBudget";
             tabBudget.Padding = new Padding(3);
-            tabBudget.Size = new Size(1374, 737);
+            tabBudget.Size = new Size(192, 64);
             tabBudget.TabIndex = 1;
             tabBudget.Text = "Budget";
             tabBudget.UseVisualStyleBackColor = true;
@@ -148,7 +148,7 @@
             budgetAnualControl.Dock = DockStyle.Fill;
             budgetAnualControl.Location = new Point(3, 3);
             budgetAnualControl.Name = "budgetAnualControl";
-            budgetAnualControl.Size = new Size(1368, 731);
+            budgetAnualControl.Size = new Size(186, 58);
             budgetAnualControl.TabIndex = 0;
             // 
             // tabCadastro
@@ -157,17 +157,18 @@
             tabCadastro.Location = new Point(4, 32);
             tabCadastro.Name = "tabCadastro";
             tabCadastro.Padding = new Padding(3);
-            tabCadastro.Size = new Size(1374, 737);
+            tabCadastro.Size = new Size(192, 64);
             tabCadastro.TabIndex = 2;
             tabCadastro.Text = "Cadastrar";
             tabCadastro.UseVisualStyleBackColor = true;
             // 
             // cadastrarControl
             // 
+            cadastrarControl.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             cadastrarControl.Dock = DockStyle.Fill;
             cadastrarControl.Location = new Point(3, 3);
             cadastrarControl.Name = "cadastrarControl";
-            cadastrarControl.Size = new Size(1368, 731);
+            cadastrarControl.Size = new Size(186, 58);
             cadastrarControl.TabIndex = 0;
             // 
             // tabListagem
@@ -176,7 +177,7 @@
             tabListagem.Location = new Point(4, 32);
             tabListagem.Name = "tabListagem";
             tabListagem.Padding = new Padding(3);
-            tabListagem.Size = new Size(1374, 737);
+            tabListagem.Size = new Size(192, 64);
             tabListagem.TabIndex = 3;
             tabListagem.Text = "Listagem";
             tabListagem.UseVisualStyleBackColor = true;
@@ -186,7 +187,7 @@
             listagemControl.Dock = DockStyle.Fill;
             listagemControl.Location = new Point(3, 3);
             listagemControl.Name = "listagemControl";
-            listagemControl.Size = new Size(1368, 731);
+            listagemControl.Size = new Size(186, 58);
             listagemControl.TabIndex = 0;
             // 
             // tabRelatorios
@@ -205,6 +206,7 @@
             relatorioControl.Dock = DockStyle.Fill;
             relatorioControl.Location = new Point(3, 3);
             relatorioControl.Name = "relatorioControl";
+            relatorioControl.Padding = new Padding(6);
             relatorioControl.Size = new Size(1368, 731);
             relatorioControl.TabIndex = 0;
             // 
