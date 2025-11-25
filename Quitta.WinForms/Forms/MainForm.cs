@@ -75,7 +75,8 @@ namespace Quitta.Forms
             relatorioControl.ExportPdfRequested += () => { };
             // Export handled inside RelatorioControl; keep event for compatibility but no placeholder message
             relatorioControl.ExportExcelRequested += () => { }; 
-            relatorioControl.FilterApplied += (filtered) => listagemControl.SetData(filtered);
+            // Note: RelatorioControl filters should not affect the Listagem tab.
+            // Do not forward RelatorioControl.FilterApplied to listagemControl to keep views independent
 
             // populate controls with data
             listagemControl.SetData(items);
@@ -94,7 +95,8 @@ namespace Quitta.Forms
             bool changed = false;
             foreach (var it in items)
             {
-                if (it.Status != StatusItem.Vencido && it.Vencimento.Date < today)
+                // only mark pending items as vencido; do not overwrite manually set 'Pago' or other statuses
+                if (it.Status == StatusItem.Pendente && it.Vencimento.Date <= today)
                 {
                     it.Status = StatusItem.Vencido;
                     changed = true;

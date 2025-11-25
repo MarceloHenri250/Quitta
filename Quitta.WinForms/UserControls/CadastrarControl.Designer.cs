@@ -53,7 +53,6 @@
             btnDeleteAttachment = new Button();
             btnUpload = new Button();
             lblUploadInfo = new Label();
-            lblExtracaoDev = new Label();
             groupBoxForm.SuspendLayout();
             panelButtons.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numValor).BeginInit();
@@ -271,13 +270,12 @@
             groupBoxUpload.Controls.Add(btnUpload);
             groupBoxUpload.Controls.Add(lblUploadInfo);
             groupBoxUpload.Controls.Add(lstAnexos);
-            groupBoxUpload.Controls.Add(lblExtracaoDev);
             groupBoxUpload.Location = new Point(800, 70);
             groupBoxUpload.Name = "groupBoxUpload";
             groupBoxUpload.Size = new Size(560, 760);
             groupBoxUpload.TabIndex = 2;
             groupBoxUpload.TabStop = false;
-            groupBoxUpload.Text = "Upload de Boleto/Nota (Extração Automática)";
+            groupBoxUpload.Text = "Upload de Boleto/Nota";
             // 
             // btnOpenAttachment
             // 
@@ -324,18 +322,6 @@
             lblUploadInfo.TextAlign = ContentAlignment.MiddleLeft;
             lblUploadInfo.UseMnemonic = false;
             // 
-            // lblExtracaoDev
-            // 
-            lblExtracaoDev.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            lblExtracaoDev.AutoSize = true;
-            lblExtracaoDev.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
-            lblExtracaoDev.ForeColor = Color.Gray;
-            lblExtracaoDev.Location = new Point(20, 720);
-            lblExtracaoDev.Name = "lblExtracaoDev";
-            lblExtracaoDev.Size = new Size(282, 19);
-            lblExtracaoDev.TabIndex = 4;
-            lblExtracaoDev.Text = "(Extração automática: Em desenvolvimento)";
-            // 
             // CadastrarControl
             // 
             Controls.Add(groupBoxUpload);
@@ -348,7 +334,6 @@
             panelButtons.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numValor).EndInit();
             groupBoxUpload.ResumeLayout(false);
-            groupBoxUpload.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -375,7 +360,6 @@
         private GroupBox groupBoxUpload;
         private Button btnUpload;
         private Label lblUploadInfo;
-        private Label lblExtracaoDev;
         private Button btnOpenAttachment;
         private Button btnDeleteAttachment;
         private Panel panelButtons;
