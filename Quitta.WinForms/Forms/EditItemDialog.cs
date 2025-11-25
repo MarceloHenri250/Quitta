@@ -2,24 +2,29 @@
 using Quitta.Services;
 using System.Data;
 
-//TODO: colocar os componentes no designer ao inves de estarem todos no codigo
-
 namespace Quitta.Forms
 {
     public partial class EditItemDialog : Form
     {
+        #region Propriedades públicas
+        // Item editado (cópia profunda do original) exposto ao chamador
         public Item EditedItem { get; private set; }
+        #endregion
 
+        #region Campos privados
+        // Serviço para operações de arquivo/anexos
         private DataService dataService;
+        #endregion
 
+        #region Construtor / Inicialização
         public EditItemDialog(Item item)
         {
             InitializeComponent();
 
-            // initialize DataService for file ops
+            // inicializar DataService para operações com anexos
             dataService = new DataService();
 
-            // deep copy item to EditedItem
+            // cópia profunda do item recebido para permitir edição sem alterar o original até salvar
             EditedItem = new Item
             {
                 Id = item.Id,
@@ -32,7 +37,7 @@ namespace Quitta.Forms
                 Attachments = item.Attachments != null ? new List<Attachment>(item.Attachments.Select(a => new Attachment { Id = a.Id, FileName = a.FileName, RelativePath = a.RelativePath, CreatedAt = a.CreatedAt })) : new List<Attachment>()
             };
 
-            // Preencher campos
+            // Preencher campos visuais com valores do item
             if (item.Tipo == TipoItem.Boleto)
                 rbBoleto.Checked = true;
             else
@@ -41,7 +46,7 @@ namespace Quitta.Forms
             txtNumero.Text = item.Numero;
             txtFornecedor.Text = item.Fornecedor;
 
-            // Ensure the numeric control can accept the item's value: clamp to Min/Max to avoid ArgumentOutOfRangeException
+            // Ajustar valor no controle numérico com proteção contra valores fora do range
             try
             {
                 decimal valueToSet = item.Valor;
@@ -51,24 +56,23 @@ namespace Quitta.Forms
             }
             catch
             {
-                // fallback: set to minimum if anything unexpected happens
+                // fallback: define valor mínimo se ocorrer erro inesperado
                 try { numValor.Value = numValor.Minimum; } catch { }
             }
 
             dtpVencimento.Value = item.Vencimento;
 
-            // populate status combobox with enum values (designer had strings)
+            // popular combobox de status com valores permitidos conforme vencimento
             try
             {
-                // set up options based on vencimento
                 UpdateStatusOptions();
-                // ensure current status is selected when allowed
+                // garante que o status atual esteja selecionado quando permitido
                 if (cmbStatus.DataSource is List<StatusItem> list && list.Contains(item.Status))
                     cmbStatus.SelectedItem = item.Status;
             }
             catch
             {
-                // fallback: leave as-is
+                // fallback para garantir que algo esteja disponível no combobox
                 try
                 {
                     cmbStatus.DataSource = Enum.GetValues(typeof(StatusItem));
@@ -85,26 +89,29 @@ namespace Quitta.Forms
                 }
             }
 
-            // subscribe to vencimento changes to update allowed statuses
+            // reagir a alterações na data de vencimento para atualizar opções de status
             dtpVencimento.ValueChanged += DtpVencimento_ValueChanged;
 
-            // populate attachment UI
+            // atualizar UI de anexos
             UpdateAttachmentUI();
         }
+        #endregion
 
+        #region Status / Validações relacionadas ao vencimento
+        // Atualiza as opções de status permitidas baseado na data de vencimento
         private void UpdateStatusOptions()
         {
-            // remove 'Pendente' option when vencimento is <= today
+            // remove a opção 'Pendente' quando o vencimento é <= hoje
             var today = DateTime.Now.Date;
             var allowed = Enum.GetValues(typeof(StatusItem)).Cast<StatusItem>()
                 .Where(s => !(s == StatusItem.Pendente && dtpVencimento.Value.Date <= today))
                 .ToList();
 
-            // bind to combobox
+            // faz o bind no combobox
             cmbStatus.DataSource = null;
             cmbStatus.DataSource = allowed;
 
-            // if current edited status is not allowed, pick a sensible fallback (Vencido if present, else first)
+            // se o status atual do EditedItem não for permitido, escolhe fallback sensato
             if (!allowed.Contains(EditedItem.Status))
             {
                 if (allowed.Contains(StatusItem.Vencido))
@@ -118,6 +125,7 @@ namespace Quitta.Forms
             }
         }
 
+        // Handler para atualizar opções quando a data de vencimento muda
         private void DtpVencimento_ValueChanged(object? sender, EventArgs e)
         {
             try
@@ -126,10 +134,13 @@ namespace Quitta.Forms
             }
             catch
             {
-                // swallow
+                // ignorar erros para não interromper a edição
             }
         }
+        #endregion
 
+        #region Anexos (UI e operações)
+        // Atualiza estados dos botões/labels de anexo conforme EditedItem
         private void UpdateAttachmentUI()
         {
             if (EditedItem.Attachments != null && EditedItem.Attachments.Count > 0)
@@ -149,6 +160,7 @@ namespace Quitta.Forms
             }
         }
 
+        // Abre o anexo associado (se existir)
         private void BtnOpenAnexo_Click(object? sender, EventArgs e)
         {
             if (EditedItem.Attachments == null || EditedItem.Attachments.Count == 0) return;
@@ -165,9 +177,10 @@ namespace Quitta.Forms
             }
         }
 
+        // Substitui ou adiciona um anexo ao item editado
         private void BtnReplaceAnexo_Click(object? sender, EventArgs e)
         {
-            // allowed extensions same as cadastro/ListagemControl
+            // extensões permitidas (mesmas regras do cadastro/listagem)
             var allowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
 
             using var ofd = new OpenFileDialog();
@@ -189,7 +202,7 @@ namespace Quitta.Forms
                     File.Copy(ofd.FileName, dest);
                     var attach = new Attachment { Id = Guid.NewGuid().ToString(), FileName = Path.GetFileName(dest), RelativePath = dest, CreatedAt = DateTime.Now };
 
-                    // if there was an existing attachment, delete its file
+                    // se já existia anexo, tenta deletar o arquivo antigo e limpar a lista
                     if (EditedItem.Attachments != null && EditedItem.Attachments.Count > 0)
                     {
                         var old = EditedItem.Attachments[0];
@@ -207,6 +220,7 @@ namespace Quitta.Forms
             }
         }
 
+        // Remove anexo atual após confirmação
         private void BtnRemoveAnexo_Click(object? sender, EventArgs e)
         {
             if (EditedItem.Attachments == null || EditedItem.Attachments.Count == 0) return;
@@ -219,10 +233,13 @@ namespace Quitta.Forms
                 UpdateAttachmentUI();
             }
         }
+        #endregion
 
+        #region Salvar / Cancelar
+        // Handler do botão Salvar: valida campos e aplica alterações à EditedItem
         private void btnSalvar_Click(object sender, EventArgs e)
         {
-            // Validações (igual ao cadastro)
+            // Validações (semelhantes ao fluxo de cadastro)
             if (string.IsNullOrWhiteSpace(txtNumero.Text))
             {
                 MessageBox.Show("O campo Número é obrigatório.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -263,7 +280,7 @@ namespace Quitta.Forms
                 EditedItem.Valor = numValor.Value;
                 EditedItem.Vencimento = dtpVencimento.Value.Date;
 
-                // robust parsing of selected status (combo is bound to enum)
+                // parsing robusto do status selecionado (combo está ligado ao enum)
                 StatusItem selectedStatus;
                 if (cmbStatus.SelectedItem is StatusItem s)
                     selectedStatus = s;
@@ -272,7 +289,7 @@ namespace Quitta.Forms
                 else
                     selectedStatus = EditedItem.Status;
 
-                // if item is overdue and selected status is Pendente, force to Vencido (safety)
+                // se estiver vencido, evitar voltar para Pendente
                 if (selectedStatus == StatusItem.Pendente && EditedItem.Vencimento.Date <= DateTime.Now.Date)
                 {
                     selectedStatus = StatusItem.Vencido;
@@ -285,10 +302,12 @@ namespace Quitta.Forms
             }
         }
 
+        // Cancelar edição
         private void BtnCancelar_Click(object? sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
             this.Close();
         }
+        #endregion
     }
 }

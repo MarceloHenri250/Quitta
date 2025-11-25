@@ -13,31 +13,37 @@ using System.IO;
 using System.Drawing.Imaging;
 using PdfSharpCore.Pdf;
 using PdfSharpCore.Drawing;
-using ClosedXML.Excel;
-// removed DataVisualization.Charting to avoid extra package
 
 namespace Quitta.UserControls
 {
     public partial class RelatorioControl : UserControl
     {
-        // Events expected by MainForm
+        #region Eventos públicos
+        // Eventos esperados pelo MainForm para notificar ações de export/filtragem
         public event Action? ExportPdfRequested;
         public event Action? ExportExcelRequested;
         public event Action<List<Item>>? FilterApplied;
+        #endregion
 
+        #region Campos privados
+        // Dados carregados e filtrados
         private List<Item> allItems = new List<Item>();
         private List<Item> filteredItems = new List<Item>();
-        private bool filtersVisible = true;
 
+        // controle de visibilidade de filtros (padrão true para compatibilidade)
+        private bool filtersVisible = true;
+        #endregion
+
+        #region Construtor e inicialização
         public RelatorioControl()
         {
             InitializeComponent();
 
-            // ensure splitter distance set when control is visible
+            // garantir ajuste do splitter quando o controle estiver visível
             this.Load += RelatorioControl_Load;
             this.Resize += RelatorioControl_Load;
 
-            // wire events
+            // ligar eventos de botões e controles
             btnApply.Click += BtnApply_Click;
             btnClear.Click += BtnClear_Click;
             btnExportExcel.Click += BtnExportExcel_Click;
@@ -45,7 +51,7 @@ namespace Quitta.UserControls
 
             cmbPeriodo.SelectedIndexChanged += CmbPeriodo_SelectedIndexChanged;
 
-            // setup combo defaults
+            // configurar valores iniciais dos comboboxes
             cmbPeriodo.Items.AddRange(new object[] { "Todos", "Mês Atual", "Mês Anterior", "Trimestre", "Ano Atual", "Personalizado" });
             cmbPeriodo.SelectedIndex = 0;
 
@@ -60,7 +66,7 @@ namespace Quitta.UserControls
             nudMax.Minimum = 0;
             nudMax.Maximum = decimal.MaxValue;
 
-            // configure grid
+            // configurar grid (colunas manuais para consistência)
             dgvPreview.AutoGenerateColumns = false;
             dgvPreview.Columns.Clear();
             var colTipo = new DataGridViewTextBoxColumn() { Name = "Tipo", HeaderText = "Tipo", DataPropertyName = "Tipo", FillWeight = 8 };
@@ -78,10 +84,13 @@ namespace Quitta.UserControls
             dgvPreview.AllowUserToDeleteRows = false;
             dgvPreview.RowTemplate.Height = 22;
 
-            // configure chart panel paint
+            // configurar pintura do painel de gráfico
             chartStatus.Paint += ChartStatus_Paint;
         }
+        #endregion
 
+        #region Eventos de UI (pequenas handlers)
+        // Ativa/desativa controles de data quando período for 'Personalizado'
         private void CmbPeriodo_SelectedIndexChanged(object? sender, EventArgs e)
         {
             var sel = cmbPeriodo.SelectedItem?.ToString() ?? "Todos";
@@ -90,6 +99,7 @@ namespace Quitta.UserControls
             dtpFim.Enabled = enabled;
         }
 
+        // Ajusta o splitter na carga/redimensionamento do controle
         private void RelatorioControl_Load(object? sender, EventArgs e)
         {
             try
@@ -111,13 +121,16 @@ namespace Quitta.UserControls
             }
             catch
             {
-                // ignore sizing errors at early initialization
+                // ignorar erros de sizing durante inicialização
             }
         }
+        #endregion
 
+        #region Exportação para PDF
+        // Handler do botão de exportar para PDF
         private void BtnExportPdf_Click(object? sender, EventArgs e)
         {
-            // export PDF with new chart rendering and improved table visuals
+            // export PDF com renderização de chart e tabela
             if (filteredItems == null || filteredItems.Count == 0)
             {
                 MessageBox.Show("Nenhum item para exportar.", "Exportar PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -135,7 +148,7 @@ namespace Quitta.UserControls
 
                 try
                 {
-                    // build chart bitmap from data (larger size for clarity)
+                    // gerar bitmap do gráfico (maior resolução para PDF)
                     int chartW = 800;
                     int chartH = 480;
                     using var chartBmp = DrawPdfChart(filteredItems, chartW, chartH);
@@ -159,15 +172,14 @@ namespace Quitta.UserControls
                             double margin = 40;
                             double y = 30;
 
-                            // Title
+                            // Título
                             gfx.DrawString("Relatório Quitta", titleFont, XBrushes.Black, new XRect(margin, y, page.Width - margin * 2, 24), XStringFormats.TopLeft);
                             var genText = "Gerado em: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
 
-                            // bring content a bit closer under the title
+                            // aproximar conteúdo do título
                             y += 28;
 
-                            // draw stats as visually distinct panels (Total, A Pagar, Pagos, Vencidos)
-                            // compute values directly from filteredItems to ensure consistency
+                            // estatísticas (Total, A Pagar, Pagos, Vencidos) calculadas diretamente
                             decimal totalAmount = filteredItems.Sum(i => i.Valor);
                             var toPayList = filteredItems.Where(i => i.Status == StatusItem.Pendente).ToList();
                             var paidList = filteredItems.Where(i => i.Status == StatusItem.Pago).ToList();
@@ -181,13 +193,13 @@ namespace Quitta.UserControls
                                 new { Title = "Vencidos", Amount = overdueList.Sum(i=>i.Valor), Count = overdueList.Count, Color = XColors.Red }
                             };
 
-                            // add extra space under title
+                            // espaço extra
                             y += 14;
 
                             double panelSpacing = 10;
                             int panelCount = stats.Length;
                             double panelWidth = (page.Width - margin * 2 - panelSpacing * (panelCount - 1)) / panelCount;
-                            double panelHeight = 64; // increased to fit amount + count stacked
+                            double panelHeight = 64;
                             double px = margin;
 
                             var amountFont = new XFont("Segoe UI", 12, XFontStyle.Bold);
@@ -197,41 +209,36 @@ namespace Quitta.UserControls
                             for (int i = 0; i < stats.Length; i++)
                             {
                                 var s = stats[i];
-                                // soft background tint based on status color
                                 var bgColor = XColor.FromArgb(40, s.Color.R, s.Color.G, s.Color.B);
                                 var bgBrush = new XSolidBrush(bgColor);
                                 var borderPen = new XPen(XColors.LightGray);
 
-                                // background panel
+                                // painel de fundo
                                 gfx.DrawRectangle(borderPen, bgBrush, px, y, panelWidth, panelHeight);
 
-                                // colored marker square
+                                // marcador colorido
                                 double markerSize = 14;
                                 double markerX = px + 10;
                                 double markerY = y + (panelHeight - markerSize) / 2;
                                 gfx.DrawRectangle(new XPen(XColors.Gray), new XSolidBrush(s.Color), markerX, markerY, markerSize, markerSize);
 
-                                // title
+                                // título e valores
                                 double textX = markerX + markerSize + 8;
                                 gfx.DrawString(s.Title, titleSmallFont, XBrushes.Gray, new XRect(textX, y + 8, panelWidth - (textX - px) - 12, 12), XStringFormats.TopLeft);
-
-                                // amount (prominent)
                                 gfx.DrawString(s.Amount.ToString("C"), amountFont, XBrushes.Black, new XRect(textX, y + 22, panelWidth - (textX - px) - 12, 26), XStringFormats.TopLeft);
-
-                                // count below amount (centered horizontally in remaining area)
                                 var countText = s.Count + " itens";
                                 gfx.DrawString(countText, smallFont, XBrushes.DarkGray, new XRect(textX, y + 44, panelWidth - (textX - px) - 12, 12), XStringFormats.TopLeft);
 
                                 px += panelWidth + panelSpacing;
                             }
 
-                            // advance y below panels
+                            // avançar abaixo dos painéis
                             y += panelHeight + 12;
 
-                            // space before chart
-                            y += 12; // reduced to bring table closer
+                            // espaço antes do gráfico
+                            y += 12;
 
-                            // draw chart centered
+                            // desenhar gráfico centralizado
                             using (var ximg = XImage.FromStream(() => new MemoryStream(imgStream.ToArray())))
                             {
                                 double maxImgWidth = page.Width - margin * 2;
@@ -240,10 +247,10 @@ namespace Quitta.UserControls
                                 double imgX = margin + (maxImgWidth - imgWidth) / 2;
                                 double imgY = y;
                                 gfx.DrawImage(ximg, imgX, imgY, imgWidth, imgHeight);
-                                y = imgY + imgHeight + 8; // smaller gap
+                                y = imgY + imgHeight + 8;
                             }
 
-                            // table header parameters (closer to chart)
+                            // parâmetros da tabela (próxima ao chart)
                             double tableTop = y + 4;
                             double colLeft = margin;
                             double tableWidth = page.Width - margin * 2;
@@ -255,7 +262,7 @@ namespace Quitta.UserControls
                             double wValor = tableWidth * 0.14;
                             double wStatus = tableWidth * 0.14;
 
-                            // draw header on first page
+                            // desenhar cabeçalho na primeira página
                             DrawTableHeader(gfx, colLeft, tableTop, new double[] { wTipo, wNumero, wFornecedor, wVenc, wValor, wStatus }, headerFont);
 
                             double rowY = tableTop + 18;
@@ -265,22 +272,19 @@ namespace Quitta.UserControls
 
                             foreach (var it in filteredItems)
                             {
-                                // start new page if needed
+                                // nova página se necessário
                                 if (rowY + lineHeight > page.Height - margin)
                                 {
-                                    // draw footer for current page (with page number)
                                     DrawFooter(gfx, page, genText, pageNumber);
-                                    // start new page
                                     pageNumber++;
                                     page = pdf.AddPage();
                                     page.Size = PdfSharpCore.PageSize.A4;
                                     gfx = XGraphics.FromPdfPage(page);
-                                    // draw header on new page
                                     DrawTableHeader(gfx, colLeft, margin, new double[] { wTipo, wNumero, wFornecedor, wVenc, wValor, wStatus }, headerFont);
                                     rowY = margin + 18;
                                 }
 
-                                // alternating row shading
+                                // sombreamento alternado
                                 double x = colLeft;
                                 var brush = (rowIndex % 2 == 0) ? XBrushes.White : new XSolidBrush(XColor.FromArgb(245, 245, 245));
 
@@ -313,15 +317,14 @@ namespace Quitta.UserControls
                                 gfx.DrawRectangle(XPens.Black, x, rowY, wStatus, lineHeight);
                                 gfx.DrawString(it.Status.ToString(), font, XBrushes.Black, new XRect(x + 4, rowY + 1, wStatus - 8, lineHeight), XStringFormats.TopLeft);
 
-                                // no extra spacing between rows
                                 rowY += lineHeight;
                                 rowIndex++;
                             }
 
-                            // draw footer for last page with page number
+                            // rodapé da última página
                             DrawFooter(gfx, page, genText, pageNumber);
 
-                            // save PDF
+                            // salvar PDF
                             using (var fs = File.OpenWrite(sfd.FileName))
                             {
                                 pdf.Save(fs);
@@ -339,7 +342,7 @@ namespace Quitta.UserControls
             }
         }
 
-        // Draws a pie chart (by amount) representing statuses and returns a Bitmap
+        // Gera bitmap do gráfico usado no PDF
         private Bitmap DrawPdfChart(List<Item> items, int width, int height)
         {
             var bmp = new Bitmap(width, height);
@@ -348,7 +351,7 @@ namespace Quitta.UserControls
                 g.Clear(Color.White);
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-                // compute sums by status
+                // soma por status
                 var groups = items.GroupBy(i => i.Status)
                     .Select(gp => new { Status = gp.Key, Total = gp.Sum(x => x.Valor) })
                     .OrderBy(gp => gp.Status)
@@ -364,7 +367,7 @@ namespace Quitta.UserControls
                     return bmp;
                 }
 
-                // pie rect
+                // rect do pie
                 int pieSize = Math.Min(width, height) - 200;
                 var pieRect = new Rectangle(20, 20, pieSize, pieSize);
 
@@ -384,11 +387,10 @@ namespace Quitta.UserControls
                     startAngle += sweep;
                 }
 
-                // legend on right
+                // legenda à direita
                 int lx = pieRect.Right + 20;
                 int box = 18;
                 using var legendFont = new Font("Segoe UI", 10);
-                // center legend vertically relative to pie
                 int totalLegendHeight = groups.Count * (box + 8) - 8;
                 int startLy = pieRect.Top + (pieRect.Height - totalLegendHeight) / 2;
                 int ly = startLy;
@@ -412,17 +414,17 @@ namespace Quitta.UserControls
             return bmp;
         }
 
-        // Draw table header at given position
+        // Desenha o cabeçalho da tabela no PDF
         private void DrawTableHeader(XGraphics gfx, double colLeft, double tableTop, double[] widths, XFont headerFont)
         {
             double x = colLeft;
             double h = 18;
             double totalW = widths.Sum();
 
-            // header background
+            // fundo do cabeçalho
             gfx.DrawRectangle(XBrushes.LightGray, x, tableTop, totalW, h);
 
-            // columns
+            // colunas
             gfx.DrawRectangle(XPens.Black, x, tableTop, widths[0], h);
             gfx.DrawString("Tipo", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[0] - 8, h), XStringFormats.TopLeft);
             x += widths[0];
@@ -446,10 +448,12 @@ namespace Quitta.UserControls
             gfx.DrawRectangle(XPens.Black, x, tableTop, widths[5], h);
             gfx.DrawString("Status", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[5] - 8, h), XStringFormats.TopLeft);
         }
+        #endregion
 
+        #region Exportação para Excel
+        // Handler do botão de exportar para Excel usando ClosedXML
         private void BtnExportExcel_Click(object? sender, EventArgs e)
         {
-            // perform export using ClosedXML with current filteredItems
             if (filteredItems == null || filteredItems.Count == 0)
             {
                 MessageBox.Show("Nenhum item para exportar.", "Exportar Excel", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -470,7 +474,7 @@ namespace Quitta.UserControls
                     using (var wb = new XLWorkbook())
                     {
                         var ws = wb.Worksheets.Add("Relatorio");
-                        // headers
+                        // cabeçalhos
                         ws.Cell(1, 1).Value = "Tipo";
                         ws.Cell(1, 2).Value = "Número";
                         ws.Cell(1, 3).Value = "Fornecedor";
@@ -490,15 +494,15 @@ namespace Quitta.UserControls
                             row++;
                         }
 
-                        // format valor column
+                        // formatar coluna de valor
                         ws.Column(5).Style.NumberFormat.Format = "R$ #,##0.00";
 
-                        // style header
+                        // estilo do cabeçalho
                         var headerRange = ws.Range(1, 1, 1, 6);
                         headerRange.Style.Font.Bold = true;
                         headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
 
-                        // apply borders to entire data range
+                        // bordas
                         var dataRange = ws.Range(1, 1, row - 1, 6);
                         dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                         dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
@@ -517,7 +521,9 @@ namespace Quitta.UserControls
                 }
             }
         }
+        #endregion
 
+        #region Filtros e carregamento de dados
         private void BtnClear_Click(object? sender, EventArgs e)
         {
             cmbPeriodo.SelectedIndex = 0;
@@ -539,33 +545,34 @@ namespace Quitta.UserControls
             ApplyFilters(true);
         }
 
-        // Called by MainForm to populate/update the control
+        // Chamado pelo MainForm para popular/atualizar o controle com dados
         public void SetData(List<Item>? items)
         {
             allItems = items != null ? new List<Item>(items) : new List<Item>();
 
-            // populate fornecedores
+            // popular fornecedores no combo
             var fornecedores = allItems.Select(i => i.Fornecedor).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s).ToList();
             cmbFornecedor.Items.Clear();
             cmbFornecedor.Items.Add("Todos");
             foreach (var f in fornecedores) cmbFornecedor.Items.Add(f);
             cmbFornecedor.SelectedIndex = 0;
 
-            // default dates
+            // datas padrão
             dtpInicio.Value = allItems.Any() ? allItems.Min(i => i.Vencimento).Date : DateTime.Now.Date;
             dtpFim.Value = allItems.Any() ? allItems.Max(i => i.Vencimento).Date : DateTime.Now.Date;
 
-            // initial filter and display
+            // aplicar filtro inicial sem disparar evento
             ApplyFilters(false);
         }
 
+        // Aplica filtros conforme controles e atualiza visualizações
         private void ApplyFilters(bool raiseEvent)
         {
             if (allItems == null) allItems = new List<Item>();
 
             IEnumerable<Item> query = allItems;
 
-            // period filter
+            // filtro por período
             var periodo = cmbPeriodo.SelectedItem?.ToString() ?? "Todos";
             DateTime? start = null, end = null;
             var today = DateTime.Now.Date;
@@ -604,7 +611,7 @@ namespace Quitta.UserControls
                 query = query.Where(i => i.Vencimento.Date >= start.Value && i.Vencimento.Date <= end.Value);
             }
 
-            // tipo
+            // filtro por tipo
             var tipo = cmbTipo.SelectedItem?.ToString() ?? "Todos";
             if (tipo != "Todos")
             {
@@ -614,7 +621,7 @@ namespace Quitta.UserControls
                 }
             }
 
-            // status
+            // filtro por status
             var status = cmbStatus.SelectedItem?.ToString() ?? "Todos";
             if (status != "Todos")
             {
@@ -624,20 +631,20 @@ namespace Quitta.UserControls
                 }
             }
 
-            // fornecedor
+            // filtro por fornecedor
             var fornecedor = cmbFornecedor.SelectedItem?.ToString() ?? "Todos";
             if (!string.IsNullOrWhiteSpace(fornecedor) && fornecedor != "Todos")
             {
                 query = query.Where(i => string.Equals(i.Fornecedor, fornecedor, StringComparison.OrdinalIgnoreCase));
             }
 
-            // valor min/max
+            // filtro por valores mínimo/máximo
             if (nudMin.Value > 0) query = query.Where(i => i.Valor >= nudMin.Value);
             if (nudMax.Value > 0) query = query.Where(i => i.Valor <= nudMax.Value);
 
             filteredItems = query.ToList();
 
-            // update grid
+            // atualizar grid (binding simples)
             var binding = filteredItems.Select(i => new
             {
                 Tipo = i.Tipo.ToString(),
@@ -650,10 +657,8 @@ namespace Quitta.UserControls
 
             dgvPreview.DataSource = binding;
 
-            // update statistics
+            // atualizar estatísticas e gráfico
             UpdateStatistics();
-
-            // update chart
             UpdateChart();
 
             if (raiseEvent)
@@ -661,10 +666,12 @@ namespace Quitta.UserControls
                 FilterApplied?.Invoke(new List<Item>(filteredItems));
             }
         }
+        #endregion
 
+        #region Gráfico e estatísticas
+        // Força repaint do painel de gráfico
         private void UpdateChart()
         {
-            // just invalidate panel; painting logic will read filteredItems
             try
             {
                 chartStatus.Invalidate();
@@ -674,6 +681,7 @@ namespace Quitta.UserControls
             }
         }
 
+        // Pintura custom do painel de status (pie chart simples)
         private void ChartStatus_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -682,7 +690,6 @@ namespace Quitta.UserControls
             var total = filteredItems.Count;
             if (total == 0)
             {
-                // draw placeholder text
                 using var f = new Font("Segoe UI", 10);
                 var txt = "Sem dados";
                 var sz = g.MeasureString(txt, f);
@@ -708,7 +715,7 @@ namespace Quitta.UserControls
                 startAngle += sweep;
             }
 
-            // draw legend on right
+            // legenda à direita
             int lx = rect.Right + 10;
             int ly = rect.Top;
             int box = 14;
@@ -730,6 +737,7 @@ namespace Quitta.UserControls
             }
         }
 
+        // Atualiza labels de estatísticas (total, a pagar, pagos, vencidos)
         private void UpdateStatistics()
         {
             if (filteredItems == null) filteredItems = new List<Item>();
@@ -751,20 +759,23 @@ namespace Quitta.UserControls
             if (lblOverdueValue != null) lblOverdueValue.Text = overdue.Sum(i => i.Valor).ToString("C");
             if (lblOverdueCount != null) lblOverdueCount.Text = overdue.Count + " itens";
         }
+        #endregion
 
-        // Draw footer with page number and generation date
+        #region Rodapé do PDF (helper)
+        // Desenha rodapé com número de página e data de geração
         private void DrawFooter(XGraphics gfx, PdfPage page, string genText, int pageNumber)
         {
             var footerFont = new XFont("Segoe UI", 9, XFontStyle.Regular);
             double margin = 40;
             double y = page.Height - 30;
-            // draw a line above footer
+            // linha acima do rodapé
             gfx.DrawLine(XPens.LightGray, margin, y - 8, page.Width - margin, y - 8);
-            // left: generation timestamp
+            // esquerda: timestamp
             gfx.DrawString(genText, footerFont, XBrushes.Gray, new XRect(margin, y - 4, 300, 18), XStringFormats.TopLeft);
-            // right: page number
+            // direita: número da página
             var pageText = $"Página {pageNumber}";
             gfx.DrawString(pageText, footerFont, XBrushes.Gray, new XRect(margin, y - 4, page.Width - margin * 2, 18), XStringFormats.TopRight);
         }
+        #endregion
     }
 }

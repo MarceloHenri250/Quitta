@@ -11,24 +11,20 @@ using System.Windows.Forms;
 
 namespace Quitta.Forms
 {
-    /// <summary>
-    /// Formulário de Login da aplicação Quitta.
-    /// Responsabilidades:
-    /// - Receber usuário e senha
-    /// - Validar campos básicos
-    /// - Acionar autenticação via AuthService
-    /// - Permitir envio com a tecla Enter
-    /// </summary>
-
     public partial class LoginForm : Form
     {
+        #region Campos privados
+        // Serviço de autenticação (pode ser injetado para facilitar testes)
         private readonly AuthService authService;
+        #endregion
 
+        #region Construtores
+        // Construtor padrão que cria um AuthService interno
         public LoginForm() : this(new AuthService())
         {
         }
 
-        // Construtor para permitir injeção de dependência em testes
+        // Construtor que permite injeção de dependência (util para testes)
         public LoginForm(AuthService authService)
         {
             InitializeComponent();
@@ -36,11 +32,10 @@ namespace Quitta.Forms
 
             // Observação: os handlers de KeyDown são ligados no Designer
         }
+        #endregion
 
-        /// <summary>
-        /// Tratador para a tecla Enter nos textboxes do formulário.
-        /// Quando Enter for pressionado, o botão Entrar é acionado.
-        /// </summary>
+        #region Handlers de UI (teclado / botões)
+
         private void TextBox_KeyDown_Submit(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
@@ -50,10 +45,6 @@ namespace Quitta.Forms
             }
         }
 
-        /// <summary>
-        /// Clique do botão Entrar. Faz validações simples e usa AuthService
-        /// para validar credenciais.
-        /// </summary>
         private void btnEntrar_Click(object sender, EventArgs e)
         {
             // Validação básica dos campos
@@ -86,5 +77,6 @@ namespace Quitta.Forms
             txtSenha.Clear();
             txtSenha.Focus();
         }
+        #endregion
     }
 }

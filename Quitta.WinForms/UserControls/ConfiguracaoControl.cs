@@ -8,11 +8,13 @@ namespace Quitta.UserControls
 {
     public partial class ConfiguracaoControl : UserControl
     {
+        #region Construtor / Eventos de ciclo de vida
         public ConfiguracaoControl()
         {
             InitializeComponent();
         }
 
+        // Evento Load do controle: inicializa controles e serviços
         private void ConfiguracaoControl_Load(object sender, EventArgs e)
         {
             // Inicializar combos e valores
@@ -21,10 +23,13 @@ namespace Quitta.UserControls
             UpdateLastBackupLabel();
             ToggleCustomYearsControls();
 
-            // Inicializa gerenciador de backup
+            // Inicializa gerenciador de backup a partir das configurações
             Quitta.Services.BackupManager.Instance.InitializeFromSettings();
         }
+        #endregion
 
+        #region Leitura de configurações -> UI
+        // Carrega as configurações salvas para os controles da UI
         private void LoadSettingsToControls()
         {
             try
@@ -37,7 +42,7 @@ namespace Quitta.UserControls
                     cmbBackupFrequency.SelectedItem = freq;
                 nudKeepLastBackups.Value = Math.Max(nudKeepLastBackups.Minimum, Math.Min(nudKeepLastBackups.Maximum, Properties.Settings.Default.KeepLastBackups));
 
-                // Budget
+                // Budget (orçamento)
                 var budgetMode = Properties.Settings.Default.BudgetMode ?? "CurrentYear";
                 switch (budgetMode)
                 {
@@ -50,17 +55,20 @@ namespace Quitta.UserControls
                 nudCustomStartYear.Value = Properties.Settings.Default.BudgetCustomStartYear == 0 ? nudCustomStartYear.Value : Properties.Settings.Default.BudgetCustomStartYear;
                 nudCustomEndYear.Value = Properties.Settings.Default.BudgetCustomEndYear == 0 ? nudCustomEndYear.Value : Properties.Settings.Default.BudgetCustomEndYear;
 
-                // Notifications
+                // Notifications (notificações)
                 chkEnableNotifications.Checked = Properties.Settings.Default.EnableNotifications;
                 nudNotificationAdvanceDays.Value = Math.Max(nudNotificationAdvanceDays.Minimum, Math.Min(nudNotificationAdvanceDays.Maximum, Properties.Settings.Default.NotificationAdvanceDays));
                 chkNotifyDesktop.Checked = Properties.Settings.Default.NotifyDesktop;
             }
             catch
             {
-                // ignorar
+                // ignorar erros na leitura das configurações para não travar a UI
             }
         }
+        #endregion
 
+        #region Gravação de configurações (UI -> Settings)
+        // Persiste as configurações selecionadas nos controles para Properties.Settings
         private void SaveControlsToSettings()
         {
             Properties.Settings.Default.AutoBackup = chkAutoBackup.Checked;
@@ -84,13 +92,13 @@ namespace Quitta.UserControls
 
             Properties.Settings.Default.Save();
 
-            // Reiniciar serviço de backup
+            // Reiniciar serviço de backup para aplicar novas configurações
             Quitta.Services.BackupManager.Instance.Restart();
 
-            // Restart notification manager to apply new settings
+            // Reiniciar gerenciador de notificações para aplicar novas configurações
             Quitta.Services.NotificationManager.Instance.InitializeFromSettings();
 
-            // Notify main form to reload data so budget settings take effect immediately
+            // Notificar MainForm para recarregar dados (caso necessário para orçamento)
             try
             {
                 var main = Application.OpenForms.OfType<Quitta.Forms.MainForm>().FirstOrDefault();
@@ -98,10 +106,13 @@ namespace Quitta.UserControls
             }
             catch
             {
-                // ignore
+                // ignorar erros ao notificar MainForm
             }
         }
+        #endregion
 
+        #region Ações de Backup (selecionar pasta / executar agora)
+        // Abrir diálogo para escolher pasta de backup
         private async void BtnChooseBackupPath_Click(object sender, EventArgs e)
         {
             using (var dlg = new FolderBrowserDialog())
@@ -117,6 +128,7 @@ namespace Quitta.UserControls
             }
         }
 
+        // Executa backup imediato (assíncrono) e atualiza label
         private async void BtnBackupNow_Click(object sender, EventArgs e)
         {
             try
@@ -130,7 +142,10 @@ namespace Quitta.UserControls
                 MessageBox.Show($"Erro ao executar backup: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        #endregion
 
+        #region Helpers de UI
+        // Atualiza label que mostra a hora do último backup realizado
         private void UpdateLastBackupLabel()
         {
             var dt = Properties.Settings.Default.LastBackupUtc;
@@ -144,11 +159,13 @@ namespace Quitta.UserControls
             }
         }
 
+        // Handler para alternar controles de ano customizado quando opção for marcada
         private void RdoCustomYears_CheckedChanged(object sender, EventArgs e)
         {
             ToggleCustomYearsControls();
         }
 
+        // Ativa/desativa os nud referentes ao intervalo customizado de anos
         private void ToggleCustomYearsControls()
         {
             bool enable = rdoCustomYears.Checked;
@@ -156,36 +173,39 @@ namespace Quitta.UserControls
             nudCustomEndYear.Enabled = enable;
         }
 
+        // Salvar todas as configurações quando usuário clicar em Salvar
         private void BtnSaveAll_Click(object sender, EventArgs e)
         {
             SaveControlsToSettings();
             MessageBox.Show("Configurações salvas.", "Salvar", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        // Restaurar padrões (mantendo algumas configurações de backup preservadas)
         private void BtnRestoreDefaults_Click(object sender, EventArgs e)
         {
-            // Preserve backup-related settings so we don't accidentally delete or change user backups
+            // preservar configurações de backup para não sobrescrever pasta/arquivos do usuário
             var preservedBackupPath = Properties.Settings.Default.BackupPath;
             var preservedKeepLast = Properties.Settings.Default.KeepLastBackups;
 
             // Restaurar padrões simples
             Properties.Settings.Default.Reset();
 
-            // Restore backup-specific values that should not be overwritten by reset
+            // Restaurar valores de backup preservados
             Properties.Settings.Default.BackupPath = preservedBackupPath;
             Properties.Settings.Default.KeepLastBackups = preservedKeepLast;
 
-            // Ensure settings are saved and UI updated
+            // Garantir que as configurações foram salvas e atualizar UI
             Properties.Settings.Default.Save();
 
             LoadSettingsToControls();
             UpdateLastBackupLabel();
 
-            // Restart services
+            // Reiniciar serviços para aplicar padrões
             Quitta.Services.BackupManager.Instance.Restart();
             Quitta.Services.NotificationManager.Instance.InitializeFromSettings();
 
             MessageBox.Show("Padrões restaurados (configurações de backup preservadas).", "Restaurar", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
+        #endregion
     }
 }

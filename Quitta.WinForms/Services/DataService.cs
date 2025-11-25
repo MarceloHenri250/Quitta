@@ -9,7 +9,6 @@ using System.IO;
 
 namespace Quitta.Services
 {
-    // Serviço responsável por carregar/salvar dados do aplicativo (itens, orçamentos, configurações e anexos)
     public class DataService
     {
         #region Paths e pastas
@@ -29,7 +28,7 @@ namespace Quitta.Services
         private static string attachmentsFolder = Path.Combine(dataFolder, "attachments");
         #endregion
 
-        #region Construtor e migração
+        #region Construtor e migração de dados legados
         public DataService()
         {
             // Garante que as pastas de dados existam
@@ -87,7 +86,7 @@ namespace Quitta.Services
         }
         #endregion
 
-        #region Anexos
+        #region Anexos (helpers)
         // Retorna a pasta onde os anexos são armazenados
         public string GetAttachmentsFolder() => attachmentsFolder;
 
@@ -117,8 +116,10 @@ namespace Quitta.Services
         }
         #endregion
 
-        // Expose o caminho da pasta de dados para backups
+        #region Pasta de dados (exposição para backup)
+        // Expõe o caminho da pasta de dados (usado por BackupManager)
         public string GetDataFolder() => dataFolder;
+        #endregion
 
         #region Itens (Load/Save)
         // Carrega a lista de itens do arquivo. Se não existir, cria um items.json vazio e retorna lista vazia.
@@ -208,7 +209,7 @@ namespace Quitta.Services
         }
         #endregion
 
-        #region Dados padrão
+        #region Dados padrão (defaults)
         // Retorna uma lista vazia — itens padrão removidos conforme pedido do usuário
         private List<Item> GetDefaultItems()
         {

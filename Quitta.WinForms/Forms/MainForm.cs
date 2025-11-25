@@ -14,56 +14,62 @@ namespace Quitta.Forms
 {
     public partial class MainForm : Form
     {
+        #region Campos privados
         private DataService dataService;
         private List<Item> items;
         private List<MonthlyBudget> budgets;
         private NotificationSettings settings;
+        #endregion
 
+        #region Construtor / Inicialização
         public MainForm()
         {
             InitializeComponent();
             dataService = new DataService();
+
+            // Inicializa e adiciona DashboardControl dinamicamente
             dashboardControl = new UserControls.DashboardControl();
             dashboardControl.Dock = DockStyle.Fill;
             tabDashboard.Controls.Clear();
             tabDashboard.Controls.Add(dashboardControl);
 
-            // wire budget control event
+            // Assina evento de alteração de budgets do controle anual
             budgetAnualControl.BudgetsChanged += () =>
             {
-                // get current budgets from the control (it was the source of the change)
+                // obter budgets atuais do controle (fonte da alteração)
                 budgets = budgetAnualControl.GetBudgets();
                 SaveData();
-                // refresh other views
+                // atualizar outras views
                 dashboardControl.SetData(items, budgets);
-                // ensure control and others are in sync
+                // garantir sincronização
                 budgetAnualControl.SetData(items, budgets);
             };
 
+            // carregar dados iniciais
             LoadData();
 
-            // wire cadastro usercontrol events (ItemCreated)
+            // Eventos de outros controles
             cadastrarControl.ItemCreated += CadastrarControl_ItemCreated;
 
-            // wire listagem and relatorio usercontrols
-            listagemControl.PageChanged += page => { /* could update page label */ };
-            // handle item updates/deletes by syncing main list and persisting
+            listagemControl.PageChanged += page => { /* poderia atualizar label de página */ };
+
+            // Sincroniza atualizações/exclusões vindas do ListagemControl
             listagemControl.ItemUpdated += item =>
             {
                 var idx = items.FindIndex(i => i.Id == item.Id);
                 if (idx >= 0) items[idx] = item;
                 SaveData();
-                // refresh views
+                // atualizar views
                 dashboardControl.SetData(items, budgets);
                 relatorioControl.SetData(items);
                 listagemControl.SetData(items);
-                // keep budget anual in sync (item status affects paid/pending calculations)
+                // manter budget anual em sincronia
                 budgetAnualControl.SetData(items, budgets);
             };
 
             listagemControl.ItemDeleted += item =>
             {
-                // remove from main list if present
+                // remover da lista principal se presente
                 items.RemoveAll(i => i.Id == item.Id);
                 SaveData();
                 dashboardControl.SetData(items, budgets);
@@ -72,30 +78,30 @@ namespace Quitta.Forms
                 budgetAnualControl.SetData(items, budgets);
             };
 
+            // Eventos de export do relatório (mantidos por compatibilidade)
             relatorioControl.ExportPdfRequested += () => { };
-            // Export handled inside RelatorioControl; keep event for compatibility but no placeholder message
-            relatorioControl.ExportExcelRequested += () => { }; 
-            // Note: RelatorioControl filters should not affect the Listagem tab.
-            // Do not forward RelatorioControl.FilterApplied to listagemControl to keep views independent
+            relatorioControl.ExportExcelRequested += () => { };
 
-            // populate controls with data
+            // popula controles com dados carregados
             listagemControl.SetData(items);
             relatorioControl.SetData(items);
         }
+        #endregion
 
-        // Make LoadData public so other controls (ConfiguracaoControl) can trigger reload when settings change
+        #region Carregamento e persistência de dados
+        // Tornar LoadData público para que outros controles possam solicitar recarga
         public void LoadData()
         {
             items = dataService.LoadItems();
             budgets = dataService.LoadBudgets();
             settings = dataService.LoadSettings();
 
-            // marcar como vencido automaticamente itens com vencimento passado
+            // marcar automaticamente como vencido itens pendentes com vencimento passado
             var today = DateTime.Now.Date;
             bool changed = false;
             foreach (var it in items)
             {
-                // only mark pending items as vencido; do not overwrite manually set 'Pago' or other statuses
+                // apenas marcar Pendente -> Vencido, não sobrescrever Pago
                 if (it.Status == StatusItem.Pendente && it.Vencimento.Date <= today)
                 {
                     it.Status = StatusItem.Vencido;
@@ -107,12 +113,21 @@ namespace Quitta.Forms
                 dataService.SaveItems(items);
             }
 
-            //Aqui voce vai chamar os metodos para popular cada aba
+            // popular abas/controles com os dados carregados
             dashboardControl.SetData(items, budgets);
             budgetAnualControl.SetData(items, budgets);
-            //etc...
+            // outros controles podem ser atualizados conforme necessário
         }
 
+        public void SaveData()
+        {
+            dataService.SaveItems(items);
+            dataService.SaveBudgets(budgets);
+            dataService.SaveSettings(settings);
+        }
+        #endregion
+
+        #region Handlers de UI (botões e ações simples)
         private void btnSair_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show(
@@ -127,23 +142,18 @@ namespace Quitta.Forms
             }
         }
 
-        public void SaveData()
-        {
-            dataService.SaveItems(items);
-            dataService.SaveBudgets(budgets);
-            dataService.SaveSettings(settings);
-        }
-
         private void AtualizarCorSaldo(decimal saldo)
         {
             lblValorSaldo.Text = saldo.ToString("C");
             lblValorSaldo.ForeColor = saldo >= 0 ? Color.Green : Color.Red;
         }
+        #endregion
 
-        // New handler for item created inside CadastrarControl
+        #region Handlers de criação/limpeza de itens (Cadastro)
+        // Novo item criado a partir do CadastrarControl
         private void CadastrarControl_ItemCreated(Item novoItem)
         {
-            // Verificar número duplicado
+            // verificar número duplicado
             if (items.Any(i => i.Numero == novoItem.Numero))
             {
                 MessageBox.Show("Já existe um item com este número.", "Atenção",
@@ -159,7 +169,7 @@ namespace Quitta.Forms
 
             cadastrarControl.ClearForm();
 
-            // refresh views
+            // atualizar views após cadastro
             dashboardControl.SetData(items, budgets);
             listagemControl.SetData(items);
             relatorioControl.SetData(items);
@@ -168,9 +178,9 @@ namespace Quitta.Forms
 
         private void LimparFormulario()
         {
-            // delegate to control
+            // delega ao controle responsável pelo formulário de cadastro
             cadastrarControl.ClearForm();
         }
-
+        #endregion
     }
 }

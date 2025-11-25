@@ -15,18 +15,26 @@ namespace Quitta.UserControls
 {
     public partial class BudgetAnualControl : UserControl
     {
+        #region Campos privados
+        // Itens carregados (vinda do MainForm / DataService)
         private List<Item> items = new();
+        // Orçamentos mensais configurados
         private List<MonthlyBudget> budgets = new();
 
-        // raised when budgets are modified so parent can persist and refresh other views
+        // Evento disparado quando orçamentos são alterados para que o proprietário persista alterações
         public event Action BudgetsChanged;
+        #endregion
 
+        #region Construtor
         public BudgetAnualControl()
         {
             InitializeComponent();
-            // Visual configuration moved to designer.
+            // Configuração visual foi delegada ao designer
         }
+        #endregion
 
+        #region Inicialização de dados
+        // Recebe dados (itens e orçamentos) e popula a view
         public void SetData(List<Item> items, List<MonthlyBudget> budgets)
         {
             this.items = items ?? new List<Item>();
@@ -34,17 +42,20 @@ namespace Quitta.UserControls
             PopulateBudget();
         }
 
-        // expose budgets for owners to persist (returns the actual list instance)
+        // Expõe a lista de budgets atual para que o owner possa persistir as mudanças
         public List<MonthlyBudget> GetBudgets()
         {
             return budgets;
         }
+        #endregion
 
+        #region População da grade de budget
+        // Monta as linhas que serão exibidas na grade com base nas configurações de período
         private void PopulateBudget()
         {
             var budgetRows = new List<BudgetMonthRow>();
 
-            // Determine range of months to display based on settings
+            // Determina intervalo de meses a exibir com base em Properties.Settings
             string mode = Properties.Settings.Default.BudgetMode ?? "CurrentYear";
             DateTime startMonth;
             DateTime endMonth;
@@ -53,17 +64,17 @@ namespace Quitta.UserControls
             switch (mode)
             {
                 case "CurrentPlusNext":
-                    // show current year and next year
+                    // exibir ano atual e próximo
                     startMonth = new DateTime(now.Year, 1, 1);
                     endMonth = new DateTime(now.Year + 1, 12, 1);
                     break;
                 case "Last2":
-                    // last two full years (previous and current)
+                    // últimos dois anos completos (anterior e atual)
                     startMonth = new DateTime(now.Year - 1, 1, 1);
                     endMonth = new DateTime(now.Year, 12, 1);
                     break;
                 case "Last3":
-                    // last three full years
+                    // últimos três anos completos
                     startMonth = new DateTime(now.Year - 2, 1, 1);
                     endMonth = new DateTime(now.Year, 12, 1);
                     break;
@@ -72,7 +83,7 @@ namespace Quitta.UserControls
                     int ey = Properties.Settings.Default.BudgetCustomEndYear;
                     if (sy <= 0) sy = now.Year;
                     if (ey <= 0) ey = now.Year;
-                    if (sy > ey) // swap if inverted
+                    if (sy > ey) // se invertido, troca
                     {
                         var t = sy; sy = ey; ey = t;
                     }
@@ -86,7 +97,7 @@ namespace Quitta.UserControls
                     break;
             }
 
-            // Build months from startMonth to endMonth inclusive
+            // Constrói os meses no intervalo inclusive
             for (var month = startMonth; month <= endMonth; month = month.AddMonths(1))
             {
                 var monthKey = month.ToString("yyyy-MM");
@@ -124,12 +135,12 @@ namespace Quitta.UserControls
                 });
             }
 
-            // bind
+            // Bind na grid
             dgvBudgetMensal.AutoGenerateColumns = false;
             dgvBudgetMensal.DataSource = null;
             dgvBudgetMensal.DataSource = budgetRows;
 
-            //Atualizar cards
+            // Atualizar cards de resumo (totais)
             var totalBudget = budgetRows.Sum(b => b.BudgetPlanejado);
             var totalPaid = budgetRows.Sum(b => b.TotalPago);
             var totalBalance = totalBudget - totalPaid;
@@ -138,13 +149,13 @@ namespace Quitta.UserControls
             lblValorPagoAnual.Text = totalPaid.ToString("C2", CultureInfo.CurrentCulture);
             lblValorSaldoAnual.Text = totalBalance.ToString("C2", CultureInfo.CurrentCulture);
 
-            // lock resizing and make columns non-resizable
+            // travar redimensionamento e tornar colunas não redimensionáveis
             foreach (DataGridViewColumn c in dgvBudgetMensal.Columns)
             {
                 c.Resizable = DataGridViewTriState.False;
             }
 
-            // small visual adjustments to specific columns if present
+            // ajustes visuais para colunas quando presentes
             if (dgvBudgetMensal.Columns["MesAno"] != null) dgvBudgetMensal.Columns["MesAno"].HeaderText = "Mês";
             if (dgvBudgetMensal.Columns["BudgetPlanejado"] != null) dgvBudgetMensal.Columns["BudgetPlanejado"].HeaderText = "Budget Planejado";
             if (dgvBudgetMensal.Columns["TotalPago"] != null) dgvBudgetMensal.Columns["TotalPago"].HeaderText = "Total Pago";
@@ -154,13 +165,16 @@ namespace Quitta.UserControls
 
             dgvBudgetMensal.Refresh();
         }
+        #endregion
 
+        #region Eventos da grade (edição de budget / botões)
+        // Trata clique em células (ex.: botão editar)
         private void DgvBudgetMensal_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.ColumnIndex >= 0 && e.RowIndex >= 0 && dgvBudgetMensal.Columns.Count > e.ColumnIndex)
             {
                 var col = dgvBudgetMensal.Columns[e.ColumnIndex];
-                // support both designer-named column and legacy names
+                // suporta nomes diferentes de colunas de ação
                 if (col.Name == "Acoes" || col.Name == "btnEdit" || col.Name == "Editar")
                 {
                     var row = (BudgetMonthRow)dgvBudgetMensal.Rows[e.RowIndex].DataBoundItem;
@@ -193,6 +207,7 @@ namespace Quitta.UserControls
             }
         }
 
+        // Formatação custom por célula para apresentar valores com máscara e cores
         private void DgvBudgetMensal_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (dgvBudgetMensal.Rows.Count == 0) return;
@@ -201,7 +216,7 @@ namespace Quitta.UserControls
             var row = dgvBudgetMensal.Rows[e.RowIndex];
             if (row.DataBoundItem is not BudgetMonthRow data) return;
 
-            // Format BudgetPlanejado: show "Não definido" when zero
+            // Formatar BudgetPlanejado: mostra "Não definido" quando zero
             if (col.DataPropertyName == "BudgetPlanejado")
             {
                 if (data.BudgetPlanejado == 0)
@@ -218,7 +233,7 @@ namespace Quitta.UserControls
                 }
             }
 
-            // Format TotalPago, Pendente, Saldo as currency when numeric
+            // Formatar TotalPago, Pendente, Saldo como moeda quando numérico
             if (col.DataPropertyName == "TotalPago" || col.DataPropertyName == "Pendente" || col.DataPropertyName == "Saldo")
             {
                 decimal val = 0;
@@ -239,7 +254,7 @@ namespace Quitta.UserControls
                 }
             }
 
-            // Status column: render as badge-like text color
+            // Coluna de Status: renderiza como texto colorido (badge-like)
             if (col.DataPropertyName == "StatusDisplay")
             {
                 if (data.StatusDisplay == "Saudável")
@@ -262,11 +277,12 @@ namespace Quitta.UserControls
                 e.FormattingApplied = true;
             }
 
-            // Month column text left aligned
+            // Alinha texto da coluna Mês à esquerda
             if (col.DataPropertyName == "MesAno")
             {
                 e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
             }
         }
+        #endregion
     }
 }

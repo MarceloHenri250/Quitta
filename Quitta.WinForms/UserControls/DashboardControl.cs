@@ -13,15 +13,21 @@ namespace Quitta.UserControls
 {
     public partial class DashboardControl : UserControl
     {
+        #region Campos privados
+        // Lista completa de itens recebida do MainForm / DataService
         private List<Item> items = new();
+        // Orçamento mensal para apresentação de cards
         private List<MonthlyBudget> budgets = new();
+        #endregion
 
+        #region Construtor / Inicialização
         public DashboardControl()
         {
             InitializeComponent();
             ConfigureVencimentosGrid();
         }
 
+        // Configura colunas e aparência do DataGridView de vencimentos
         private void ConfigureVencimentosGrid()
         {
             // Ensure we control which columns are shown (do not rely on auto-generation)
@@ -92,7 +98,9 @@ namespace Quitta.UserControls
             dgvVencimentos.BackgroundColor = Color.White;
             dgvVencimentos.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(250, 250, 250) };
         }
+        #endregion
 
+        #region Recebimento de dados e atualização geral
         /// <summary>
         /// Recebe os dados para exibição na dashboard.
         /// </summary>
@@ -112,9 +120,12 @@ namespace Quitta.UserControls
             AtualizarGridVencimentos();
             AtualizarGrafico();
         }
+        #endregion
 
+        #region Cards (estatísticas resumidas)
         private void AtualizarCards()
         {
+            // calcula somatórios por status
             var totalPendente = items.Where(i => i.Status == StatusItem.Pendente).Sum(i => i.Valor);
             var totalVencido = items.Where(i => i.Status == StatusItem.Vencido).Sum(i => i.Valor);
             var totalPago = items.Where(i => i.Status == StatusItem.Pago).Sum(i => i.Valor);
@@ -123,6 +134,7 @@ namespace Quitta.UserControls
             lblValorVencido.Text = totalVencido.ToString("C2");
             lblValorPago.Text = totalPago.ToString("C2");
 
+            // calcular orçamento mensal e saldo
             var currentMonth = DateTime.Now.ToString("yyyy-MM");
             var budgetMensal = budgets.FirstOrDefault(b => b.Month == currentMonth)?.Budget ?? 0;
             var pagoMensal = items
@@ -134,9 +146,12 @@ namespace Quitta.UserControls
             lblValorSaldo.Text = saldoMensal.ToString("C2");
             lblValorSaldo.ForeColor = saldoMensal >= 0 ? Color.FromArgb(6, 95, 70) : Color.FromArgb(153, 27, 27);
         }
+        #endregion
 
+        #region Grid de vencimentos
         private void AtualizarGridVencimentos()
         {
+            // seleciona até 10 próximos vencimentos pendentes nos próximos 30 dias
             var vencimentos = items
                 .Where(i => i.Status == StatusItem.Pendente &&
                             i.Vencimento >= DateTime.Now &&
@@ -148,7 +163,9 @@ namespace Quitta.UserControls
             dgvVencimentos.DataSource = null;
             dgvVencimentos.DataSource = vencimentos;
         }
+        #endregion
 
+        #region Gráfico custom (barra de comparativo por mês)
         private void AtualizarGrafico()
         {
             // Use fixed dimensions to avoid rendering cuts
@@ -180,7 +197,7 @@ namespace Quitta.UserControls
                     g.DrawLine(penGrid, 40, y, targetWidth - 20, y);
                 }
 
-                // draw bars based on data
+                // draw bars based on data (últimos 6 meses)
                 var meses = Enumerable.Range(0, 6)
                     .Select(i => DateTime.Now.AddMonths(-5 + i))
                     .ToList();
@@ -264,13 +281,16 @@ namespace Quitta.UserControls
                     g.DrawString("Notas", fontLabel, Brushes.Black, legendX + gap + boxSize + 6, legendY - 1);
                 }
 
+                // liberar recursos gráficos explícitos
                 penGrid.Dispose();
                 brushBoleto.Dispose();
                 brushNota.Dispose();
             }
 
+            // substituir imagem atual do PictureBox com a nova gerada
             picGrafico.Image?.Dispose();
             picGrafico.Image = bmp;
         }
+        #endregion
     }
 }

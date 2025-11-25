@@ -11,20 +11,30 @@ namespace Quitta.Services
 {
     internal sealed class NotificationManager : IDisposable
     {
+        #region Singleton
         private static readonly Lazy<NotificationManager> _instance = new(() => new NotificationManager());
         public static NotificationManager Instance => _instance.Value;
+        #endregion
 
+        #region Campos privados / estado
         private System.Threading.Timer? _timer;
         private readonly object _lock = new();
         private NotifyIcon? _notifyIcon;
+        #endregion
 
+        #region Construtor
+        // Construtor privado para singleton
         private NotificationManager() { }
+        #endregion
 
+        #region Inicialização a partir das configurações
+        // Inicializa o gerenciador com base nas configurações salvas
         public void InitializeFromSettings()
         {
             Restart();
         }
 
+        // Reinicia verificação/agendamento conforme configurações atuais
         public void Restart()
         {
             Stop();
@@ -32,7 +42,7 @@ namespace Quitta.Services
             if (!Properties.Settings.Default.EnableNotifications || !Properties.Settings.Default.NotifyDesktop)
                 return;
 
-            // create notify icon if needed
+            // cria notify icon se necessário
             if (_notifyIcon == null)
             {
                 _notifyIcon = new NotifyIcon();
@@ -41,10 +51,13 @@ namespace Quitta.Services
                 _notifyIcon.Text = "Quitta - Notificações";
             }
 
-            // check immediately and then every hour while app is open
+            // checa imediatamente e depois a cada hora enquanto o app estiver aberto
             _timer = new System.Threading.Timer(async _ => await TimerTick(), null, TimeSpan.Zero, TimeSpan.FromHours(1));
         }
+        #endregion
 
+        #region Agendamento / Tick
+        // Executado periodicamente pelo timer; delega para CheckAndNotify
         private async Task TimerTick()
         {
             try
@@ -53,11 +66,14 @@ namespace Quitta.Services
             }
             catch
             {
-                // ignore
+                // ignorar exceções internas para não derrubar o timer
             }
             await Task.CompletedTask;
         }
+        #endregion
 
+        #region Verificação e exibição de notificações
+        // Verifica itens com vencimento próximo e exibe balão de notificação
         private void CheckAndNotify()
         {
             lock (_lock)
@@ -81,12 +97,12 @@ namespace Quitta.Services
 
                     if (due.Count == 0) return;
 
-                    // Prepare message
+                    // Prepara a mensagem com até 6 linhas
                     var lines = due.Take(6).Select(i => $"{i.Numero} - {i.Fornecedor} - {i.Vencimento:dd/MM} - {i.Valor:C2}");
                     string text = string.Join("\n", lines);
                     if (due.Count > 6) text += $"\n... e mais {due.Count - 6} itens";
 
-                    // Show balloon on UI thread if available, otherwise direct
+                    // Exibe balão na thread da UI se possível
                     var mainForm = Application.OpenForms.OfType<Form>().FirstOrDefault();
                     if (mainForm != null && mainForm.IsHandleCreated)
                     {
@@ -114,11 +130,14 @@ namespace Quitta.Services
                 }
                 catch
                 {
-                    // ignore
+                    // ignorar falhas de verificação
                 }
             }
         }
+        #endregion
 
+        #region Stop / Dispose
+        // Para cronômetro e limpa ícone de notificação
         public void Stop()
         {
             lock (_lock)
@@ -138,5 +157,6 @@ namespace Quitta.Services
         {
             Stop();
         }
+        #endregion
     }
 }

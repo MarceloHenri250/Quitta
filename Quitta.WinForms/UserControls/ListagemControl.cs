@@ -15,7 +15,8 @@ namespace Quitta.UserControls
 {
     public partial class ListagemControl : UserControl
     {
-        // helper display row used as DataSource to allow editing via DataGridView
+        #region Tipos internos
+        // Modelo usado apenas para exibição/edição na DataGridView
         private class DisplayRow
         {
             public string Id { get; set; } = string.Empty;
@@ -27,16 +28,75 @@ namespace Quitta.UserControls
             public StatusItem Status { get; set; }
             public string AnexoDisplay { get; set; } = "Sem anexo";
         }
+        #endregion
 
-        // keep a binding list so DataGridView can interact with rows
+        #region Campos privados
+        // BindingList para permitir edição via DataGridView
         private BindingList<DisplayRow> displayRows = new();
-        // Lista completa carregada neste controle (cache local)
+
+        // Cache local dos itens (lista completa e filtrada)
         private List<Item> items = new();
         private List<Item> filteredItems = new();
+
+        // paginação
         private int currentPage = 1;
         private int pageSize = 20;
 
-        // Calculate how many rows fit in the DataGridView client area (dynamic page size)
+        // controle de edição de status (para permitir revert em caso de erro)
+        private StatusItem? prevStatusValue = null;
+        private int prevStatusRowIndex = -1;
+
+        // serviço de dados para persistência de anexos e outros
+        private readonly DataService dataService;
+
+        // eventos que MainForm pode assinar
+        public event Action<int>? PageChanged;
+        public event Action<Item>? ItemUpdated;
+        public event Action<Item>? ItemDeleted;
+        #endregion
+
+        #region Construtor e inicialização
+        public ListagemControl()
+        {
+            InitializeComponent();
+
+            dataService = new DataService();
+
+            // recalcula página efetiva quando tamanho muda
+            dgvListagem.SizeChanged += (s, e) => RefreshGrid();
+            this.Resize += (s, e) => RefreshGrid();
+
+            // eventos do DataGridView
+            dgvListagem.KeyDown += DgvListagem_KeyDown;
+            dgvListagem.CellContentClick += DgvListagem_CellContentClick;
+            dgvListagem.CellBeginEdit += DgvListagem_CellBeginEdit;
+            dgvListagem.EditingControlShowing += DgvListagem_EditingControlShowing;
+            dgvListagem.CellValueChanged += DgvListagem_CellValueChanged;
+
+            // commit imediato para editor de status em célula
+            dgvListagem.CurrentCellDirtyStateChanged += (s, e) =>
+            {
+                if (dgvListagem.CurrentCell != null && dgvListagem.CurrentCell.OwningColumn == colStatus && dgvListagem.IsCurrentCellDirty)
+                {
+                    dgvListagem.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                }
+            };
+
+            // filtros e paginação
+            btnFiltrar.Click += (s, e) => { currentPage = 1; RefreshGrid(); };
+            btnLimparFiltros.Click += (s, e) => { ClearFilters(); };
+
+            btnPrimeira.Click += (s, e) => { FirstPage(); };
+            btnAnterior.Click += (s, e) => { PreviousPage(); };
+            btnProxima.Click += (s, e) => { NextPage(); };
+            btnUltima.Click += (s, e) => { LastPage(); };
+
+            txtBusca.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { currentPage = 1; RefreshGrid(); } };
+        }
+        #endregion
+
+        #region Utilitários de layout/paginação
+        // Calcula quantas linhas cabem no DataGridView (tamanho dinâmico de página)
         private int GetEffectivePageSize()
         {
             try
@@ -52,212 +112,6 @@ namespace Quitta.UserControls
             {
                 return Math.Max(1, pageSize);
             }
-        }
-
-        // Guarda valor anterior do status para permitir reverter caso necessário
-        private StatusItem? prevStatusValue = null;
-        private int prevStatusRowIndex = -1;
-
-        // Serviço de dados usado para persistir alterações diretamente a partir deste controle
-        private readonly DataService dataService;
-
-        // Eventos que o MainForm pode assinar para reagir a updates/deletes
-        public event Action<int>? PageChanged;
-        public event Action<Item>? ItemUpdated;
-        public event Action<Item>? ItemDeleted;
-
-        public ListagemControl()
-        {
-            InitializeComponent();
-
-            dataService = new DataService();
-
-            // refresh grid when control or grid size changes so effective page size is recalculated
-            dgvListagem.SizeChanged += (s, e) => RefreshGrid();
-            this.Resize += (s, e) => RefreshGrid();
-
-            // configurar eventos do DataGrid e controles
-            dgvListagem.KeyDown += DgvListagem_KeyDown;
-            dgvListagem.CellContentClick += DgvListagem_CellContentClick;
-            dgvListagem.CellBeginEdit += DgvListagem_CellBeginEdit;
-            dgvListagem.EditingControlShowing += DgvListagem_EditingControlShowing;
-            dgvListagem.CellValueChanged += DgvListagem_CellValueChanged;
-
-            // Commit imediato para que CellValueChanged dispare assim que usuário escolher uma opção
-            dgvListagem.CurrentCellDirtyStateChanged += (s, e) =>
-            {
-                if (dgvListagem.CurrentCell != null && dgvListagem.CurrentCell.OwningColumn == colStatus && dgvListagem.IsCurrentCellDirty)
-                {
-                    dgvListagem.CommitEdit(DataGridViewDataErrorContexts.Commit);
-                }
-            };
-
-            btnFiltrar.Click += (s, e) => { currentPage = 1; RefreshGrid(); };
-            btnLimparFiltros.Click += (s, e) => { ClearFilters(); };
-
-            btnPrimeira.Click += (s, e) => { FirstPage(); };
-            btnAnterior.Click += (s, e) => { PreviousPage(); };
-            btnProxima.Click += (s, e) => { NextPage(); };
-            btnUltima.Click += (s, e) => { LastPage(); };
-
-            txtBusca.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { currentPage = 1; RefreshGrid(); } };
-        }
-
-        /// <summary>
-        /// Define os dados exibidos no controle.
-        /// </summary>
-        /// <param name="items">Lista completa de itens (vinda do DataService / MainForm)</param>
-        public void SetData(List<Item> items)
-        {
-            this.items = items ?? new List<Item>();
-            currentPage = 1;
-            ApplyFilters();
-            RefreshGrid();
-        }
-
-        /// <summary>
-        /// Aplica os filtros definidos na UI sobre a coleção completa `items` e atualiza `filteredItems`.
-        /// </summary>
-        private void ApplyFilters()
-        {
-            // Start from full list
-            IEnumerable<Item> q = items;
-
-            // Busca por texto (Número ou Fornecedor)
-            var term = txtBusca?.Text?.Trim();
-            if (!string.IsNullOrEmpty(term))
-            {
-                q = q.Where(i => (i.Numero != null && i.Numero.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
-                                || (i.Fornecedor != null && i.Fornecedor.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0));
-            }
-
-            // Filtro por tipo (Boleto/Nota)
-            if (cmbFiltroTipo != null && cmbFiltroTipo.SelectedItem != null && cmbFiltroTipo.SelectedItem.ToString() != "Todos")
-            {
-                var sel = cmbFiltroTipo.SelectedItem.ToString();
-                if (sel == "Boleto") q = q.Where(i => i.Tipo == TipoItem.Boleto);
-                else if (sel == "Nota") q = q.Where(i => i.Tipo == TipoItem.Nota);
-            }
-
-            // Filtro por status
-            if (cmbFiltroStatus != null && cmbFiltroStatus.SelectedItem != null && cmbFiltroStatus.SelectedItem.ToString() != "Todos")
-            {
-                var sel = cmbFiltroStatus.SelectedItem.ToString();
-                if (sel == "Pendente") q = q.Where(i => i.Status == StatusItem.Pendente);
-                else if (sel == "Pago") q = q.Where(i => i.Status == StatusItem.Pago);
-                else if (sel == "Vencido") q = q.Where(i => i.Status == StatusItem.Vencido);
-            }
-
-            // Filtro por período: permite start-only, end-only ou intervalo
-            if (dtpFiltroInicio != null && dtpFiltroFim != null)
-            {
-                var hasStart = dtpFiltroInicio.ShowCheckBox ? dtpFiltroInicio.Checked : true;
-                var hasEnd = dtpFiltroFim.ShowCheckBox ? dtpFiltroFim.Checked : true;
-
-                if (hasStart && !hasEnd)
-                {
-                    var start = dtpFiltroInicio.Value.Date;
-                    q = q.Where(i => i.Vencimento.Date >= start);
-                }
-                else if (!hasStart && hasEnd)
-                {
-                    var end = dtpFiltroFim.Value.Date;
-                    q = q.Where(i => i.Vencimento.Date <= end);
-                }
-                else if (hasStart && hasEnd)
-                {
-                    var start = dtpFiltroInicio.Value.Date;
-                    var end = dtpFiltroFim.Value.Date;
-                    if (start <= end)
-                    {
-                        q = q.Where(i => i.Vencimento.Date >= start && i.Vencimento.Date <= end);
-                    }
-                }
-            }
-
-            filteredItems = q.ToList();
-        }
-
-        /// <summary>
-        /// Atualiza a grade com a página atual de `filteredItems`.
-        /// </summary>
-        private void RefreshGrid()
-        {
-            ApplyFilters();
-
-            var effectivePageSize = GetEffectivePageSize();
-
-            // Auto-update overdue items: if status is Pendente and vencimento <= today, set to Vencido
-            var today = DateTime.Now.Date;
-            var changed = new List<Item>();
-            // iterate over a snapshot to avoid Collection modified exceptions when event handlers modify the original list
-            foreach (var it in items.ToList())
-            {
-                if (it.Status == StatusItem.Pendente && it.Vencimento.Date <= today)
-                {
-                    it.Status = StatusItem.Vencido;
-                    changed.Add(it);
-                }
-            }
-            if (changed.Count > 0)
-            {
-                // re-apply filters since statuses changed
-                ApplyFilters();
-                // notify listeners (MainForm) so they can persist and refresh shared state
-                foreach (var it in changed)
-                {
-                    try { ItemUpdated?.Invoke(it); } catch { }
-                }
-            }
-
-            var totalPages = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / effectivePageSize));
-            if (currentPage > totalPages) currentPage = totalPages;
-
-            var page = filteredItems.Skip((currentPage - 1) * effectivePageSize).Take(effectivePageSize).ToList();
-
-            // Project to a display model to include AnexoDisplay and Id and bind as a BindingList so editing works
-            displayRows.Clear();
-            foreach (var i in page)
-            {
-                displayRows.Add(new DisplayRow
-                {
-                    Id = i.Id,
-                    Tipo = i.Tipo,
-                    Numero = i.Numero,
-                    Fornecedor = i.Fornecedor,
-                    Valor = i.Valor,
-                    Vencimento = i.Vencimento,
-                    Status = i.Status,
-                    AnexoDisplay = (i.Attachments != null && i.Attachments.Count > 0) ? "Abrir anexo" : "Sem anexo"
-                });
-            }
-
-            dgvListagem.DataSource = null;
-            dgvListagem.DataSource = displayRows;
-
-            // Ensure per-row button text for Anexo column when not bound
-            for (int r = 0; r < dgvListagem.Rows.Count; r++)
-            {
-                var cell = dgvListagem.Rows[r].Cells["colAnexo"] as DataGridViewButtonCell;
-                if (cell != null)
-                {
-                    var val = cell.Value?.ToString();
-                    if (string.IsNullOrEmpty(val))
-                    {
-                        // fallback to display property
-                        var dr = dgvListagem.Rows[r].DataBoundItem;
-                        var prop = dr?.GetType().GetProperty("AnexoDisplay");
-                        var txt = prop?.GetValue(dr)?.ToString() ?? "Sem anexo";
-                        cell.Value = txt;
-                    }
-                    else
-                    {
-                        cell.Value = val;
-                    }
-                }
-            }
-
-            UpdatePaginationLabel();
         }
 
         private void UpdatePaginationLabel()
@@ -299,10 +153,172 @@ namespace Quitta.UserControls
             currentPage = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / effectivePageSize));
             RefreshGrid();
         }
+        #endregion
+
+        #region Carregamento e aplicação de filtros
+        /// <summary>
+        /// Define os dados exibidos no controle.
+        /// </summary>
+        /// <param name="items">Lista completa de itens (vinda do DataService / MainForm)</param>
+        public void SetData(List<Item> items)
+        {
+            this.items = items ?? new List<Item>();
+            currentPage = 1;
+            ApplyFilters();
+            RefreshGrid();
+        }
 
         /// <summary>
+        /// Aplica filtros definidos na UI sobre a coleção completa `items` e atualiza `filteredItems`.
+        /// </summary>
+        private void ApplyFilters()
+        {
+            // começar pela lista completa
+            IEnumerable<Item> q = items;
+
+            // busca por texto (Número ou Fornecedor)
+            var term = txtBusca?.Text?.Trim();
+            if (!string.IsNullOrEmpty(term))
+            {
+                q = q.Where(i => (i.Numero != null && i.Numero.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                                || (i.Fornecedor != null && i.Fornecedor.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0));
+            }
+
+            // filtro por tipo (Boleto/Nota)
+            if (cmbFiltroTipo != null && cmbFiltroTipo.SelectedItem != null && cmbFiltroTipo.SelectedItem.ToString() != "Todos")
+            {
+                var sel = cmbFiltroTipo.SelectedItem.ToString();
+                if (sel == "Boleto") q = q.Where(i => i.Tipo == TipoItem.Boleto);
+                else if (sel == "Nota") q = q.Where(i => i.Tipo == TipoItem.Nota);
+            }
+
+            // filtro por status
+            if (cmbFiltroStatus != null && cmbFiltroStatus.SelectedItem != null && cmbFiltroStatus.SelectedItem.ToString() != "Todos")
+            {
+                var sel = cmbFiltroStatus.SelectedItem.ToString();
+                if (sel == "Pendente") q = q.Where(i => i.Status == StatusItem.Pendente);
+                else if (sel == "Pago") q = q.Where(i => i.Status == StatusItem.Pago);
+                else if (sel == "Vencido") q = q.Where(i => i.Status == StatusItem.Vencido);
+            }
+
+            // filtro por período: permite start-only, end-only ou intervalo
+            if (dtpFiltroInicio != null && dtpFiltroFim != null)
+            {
+                var hasStart = dtpFiltroInicio.ShowCheckBox ? dtpFiltroInicio.Checked : true;
+                var hasEnd = dtpFiltroFim.ShowCheckBox ? dtpFiltroFim.Checked : true;
+
+                if (hasStart && !hasEnd)
+                {
+                    var start = dtpFiltroInicio.Value.Date;
+                    q = q.Where(i => i.Vencimento.Date >= start);
+                }
+                else if (!hasStart && hasEnd)
+                {
+                    var end = dtpFiltroFim.Value.Date;
+                    q = q.Where(i => i.Vencimento.Date <= end);
+                }
+                else if (hasStart && hasEnd)
+                {
+                    var start = dtpFiltroInicio.Value.Date;
+                    var end = dtpFiltroFim.Value.Date;
+                    if (start <= end)
+                    {
+                        q = q.Where(i => i.Vencimento.Date >= start && i.Vencimento.Date <= end);
+                    }
+                }
+            }
+
+            filteredItems = q.ToList();
+        }
+        #endregion
+
+        #region Atualização da grade e projeção para exibição
+        /// <summary>
+        /// Atualiza a grade com a página atual de `filteredItems`.
+        /// </summary>
+        private void RefreshGrid()
+        {
+            ApplyFilters();
+
+            var effectivePageSize = GetEffectivePageSize();
+
+            // atualização automática de itens vencidos (se Pendente e vencido, marca Vencido)
+            var today = DateTime.Now.Date;
+            var changed = new List<Item>();
+
+            // iterar sobre snapshot para evitar CollectionModified
+            foreach (var it in items.ToList())
+            {
+                if (it.Status == StatusItem.Pendente && it.Vencimento.Date <= today)
+                {
+                    it.Status = StatusItem.Vencido;
+                    changed.Add(it);
+                }
+            }
+
+            if (changed.Count > 0)
+            {
+                ApplyFilters();
+                // notificar ouvintes para persistência
+                foreach (var it in changed)
+                {
+                    try { ItemUpdated?.Invoke(it); } catch { }
+                }
+            }
+
+            var totalPages = Math.Max(1, (int)Math.Ceiling((double)filteredItems.Count / effectivePageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            var page = filteredItems.Skip((currentPage - 1) * effectivePageSize).Take(effectivePageSize).ToList();
+
+            // projetar para DisplayRow (inclui AnexoDisplay e Id) para binding
+            displayRows.Clear();
+            foreach (var i in page)
+            {
+                displayRows.Add(new DisplayRow
+                {
+                    Id = i.Id,
+                    Tipo = i.Tipo,
+                    Numero = i.Numero,
+                    Fornecedor = i.Fornecedor,
+                    Valor = i.Valor,
+                    Vencimento = i.Vencimento,
+                    Status = i.Status,
+                    AnexoDisplay = (i.Attachments != null && i.Attachments.Count > 0) ? "Abrir anexo" : "Sem anexo"
+                });
+            }
+
+            dgvListagem.DataSource = null;
+            dgvListagem.DataSource = displayRows;
+
+            // garantir texto do botão de anexo por linha quando não está ligado diretamente ao binding
+            for (int r = 0; r < dgvListagem.Rows.Count; r++)
+            {
+                var cell = dgvListagem.Rows[r].Cells["colAnexo"] as DataGridViewButtonCell;
+                if (cell != null)
+                {
+                    var val = cell.Value?.ToString();
+                    if (string.IsNullOrEmpty(val))
+                    {
+                        var dr = dgvListagem.Rows[r].DataBoundItem;
+                        var prop = dr?.GetType().GetProperty("AnexoDisplay");
+                        var txt = prop?.GetValue(dr)?.ToString() ?? "Sem anexo";
+                        cell.Value = txt;
+                    }
+                    else
+                    {
+                        cell.Value = val;
+                    }
+                }
+            }
+
+            UpdatePaginationLabel();
+        }
+        #endregion
+
+        #region Edição inline (Status) e handlers relacionados
+        /// <summary>
         /// Antes de iniciar edição de status, guardamos o valor atual para eventual revert.
-        /// Trabalha com o objeto anônimo ligado à grade (pega Id e acha Item real em `items`).
         /// </summary>
         private void DgvListagem_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
         {
@@ -325,7 +341,7 @@ namespace Quitta.UserControls
         }
 
         /// <summary>
-        /// Quando o editor (ComboBox) aparece, ajustamos a lista de opções permitidas.
+        /// Quando o editor (ComboBox) aparece, ajustamos opções permitidas (ex: impedir Pendente se vencido).
         /// </summary>
         private void DgvListagem_EditingControlShowing(object? sender, DataGridViewEditingControlShowingEventArgs e)
         {
@@ -333,7 +349,6 @@ namespace Quitta.UserControls
             var col = dgvListagem.CurrentCell.OwningColumn;
             if (col == colStatus && e.Control is ComboBox cb)
             {
-                // ajustar opções: remover 'Pendente' quando o vencimento já passou
                 var rowObj = dgvListagem.CurrentRow?.DataBoundItem;
                 if (rowObj != null)
                 {
@@ -347,19 +362,16 @@ namespace Quitta.UserControls
                             var today = DateTime.Now.Date;
                             var allowed = Enum.GetValues(typeof(StatusItem)).Cast<StatusItem>().Where(s => !(s == StatusItem.Pendente && it.Vencimento.Date <= today)).ToList();
 
-                            // definir DataSource do ComboBox do editor para a lista filtrada
                             try
                             {
                                 cb.DataSource = null;
                                 cb.DataSource = allowed;
-                                // ensure immediate commit when user selects an option
-                                // remove previous handler to avoid duplicates then attach
                                 cb.SelectedIndexChanged -= StatusEditor_SelectedIndexChanged;
                                 cb.SelectedIndexChanged += StatusEditor_SelectedIndexChanged;
                             }
                             catch
                             {
-                                // se falhar, não interrompe a edição
+                                // não interromper edição em caso de erro aqui
                             }
                         }
                     }
@@ -367,7 +379,7 @@ namespace Quitta.UserControls
             }
         }
 
-        // handler to commit edit immediately when user chooses a status in the in-place ComboBox
+        // handler para cometer edição imediatamente quando usuário altera o ComboBox
         private void StatusEditor_SelectedIndexChanged(object? sender, EventArgs e)
         {
             try
@@ -379,12 +391,11 @@ namespace Quitta.UserControls
             }
             catch
             {
-                // swallow errors to avoid interrupting UI
             }
         }
 
         /// <summary>
-        /// Trata alteração de valor da célula (aplica e salva automaticamente).
+        /// Trata alteração de valor da célula (aplica e delega persistência via evento ItemUpdated).
         /// </summary>
         private void DgvListagem_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
         {
@@ -407,7 +418,7 @@ namespace Quitta.UserControls
 
                 if (newStatus == null) return;
 
-                // ignore if unchanged
+                // se não mudou, limpar estado anterior
                 if (newStatus.Value == item.Status)
                 {
                     prevStatusValue = null;
@@ -415,22 +426,20 @@ namespace Quitta.UserControls
                     return;
                 }
 
-                // if item is overdue and newStatus is Pendente, block it (shouldn't be available in editor but double-check)
+                // garantir que não volte para Pendente se já estiver vencido
                 if (newStatus.Value == StatusItem.Pendente && item.Vencimento.Date <= DateTime.Now.Date)
                 {
-                    // force to Vencido
                     newStatus = StatusItem.Vencido;
                 }
 
                 var appliedStatus = newStatus.Value;
 
-                // apply and persist on UI thread after current edit finishes
+                // aplicar e notificar na UI thread
                 this.BeginInvoke((Action)(() =>
                 {
                     item.Status = appliedStatus;
                     var idx = items.FindIndex(i => i.Id == item.Id);
                     if (idx >= 0) items[idx].Status = item.Status;
-                    // delegate persistence to MainForm via event
                     ItemUpdated?.Invoke(item);
                     RefreshGrid();
                 }));
@@ -439,7 +448,9 @@ namespace Quitta.UserControls
                 prevStatusRowIndex = -1;
             }
         }
+        #endregion
 
+        #region Ações por clique nas colunas (Anexo / Editar / Excluir)
         /// <summary>
         /// Exclusão via tecla Delete com confirmação e persistência imediata.
         /// </summary>
@@ -460,7 +471,6 @@ namespace Quitta.UserControls
                 if (res == DialogResult.Yes)
                 {
                     items.RemoveAll(i => i.Id == selected.Id);
-                    // notify MainForm to persist changes
                     ItemDeleted?.Invoke(selected);
                     RefreshGrid();
                 }
@@ -477,7 +487,6 @@ namespace Quitta.UserControls
             var itemRow = dgvListagem.Rows[e.RowIndex].DataBoundItem;
             if (itemRow == null) return;
 
-            // itemRow is an anonymous type used for display, find underlying item by Id
             var idProp = itemRow.GetType().GetProperty("Id");
             if (idProp == null) return;
             var id = idProp.GetValue(itemRow)?.ToString();
@@ -486,7 +495,7 @@ namespace Quitta.UserControls
 
             if (col == colAnexo)
             {
-                // if has attachment, open the first one; otherwise allow adding
+                // se existe anexo, tenta abrir o primeiro; caso contrário permite adicionar
                 if (item.Attachments != null && item.Attachments.Count > 0)
                 {
                     var attach = item.Attachments[0];
@@ -504,7 +513,6 @@ namespace Quitta.UserControls
                 else
                 {
                     // adicionar anexo (apenas um permitido)
-                    // allowed extensions must match cadastro rules
                     var allowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
                     using var ofd = new OpenFileDialog();
                     ofd.Title = "Selecionar anexo";
@@ -524,11 +532,9 @@ namespace Quitta.UserControls
                             {
                                 File.Copy(ofd.FileName, dest);
                                 var attach = new Attachment { Id = Guid.NewGuid().ToString(), FileName = Path.GetFileName(dest), RelativePath = dest, CreatedAt = DateTime.Now };
-                                // only one attachment allowed: replace existing
                                 if (item.Attachments == null) item.Attachments = new List<Attachment>();
                                 else item.Attachments.Clear();
                                 item.Attachments.Add(attach);
-                                // notify MainForm to persist changes
                                 ItemUpdated?.Invoke(item);
                                 RefreshGrid();
                             }
@@ -545,7 +551,6 @@ namespace Quitta.UserControls
 
             if (col == colEditar)
             {
-                // abrir diálogo de edição (o diálogo já pede confirmação ao salvar)
                 using var dlg = new EditItemDialog(item);
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
@@ -553,7 +558,6 @@ namespace Quitta.UserControls
                     var idx = items.FindIndex(i => i.Id == edited.Id);
                     if (idx >= 0) items[idx] = edited;
 
-                    // notify MainForm to persist and refresh other views
                     ItemUpdated?.Invoke(edited);
                     RefreshGrid();
                 }
@@ -569,7 +573,9 @@ namespace Quitta.UserControls
                 }
             }
         }
+        #endregion
 
+        #region Helpers públicos/privados
         /// <summary>
         /// Restaura os filtros para o estado inicial.
         /// </summary>
@@ -578,12 +584,11 @@ namespace Quitta.UserControls
             if (txtBusca != null) txtBusca.Clear();
             if (cmbFiltroTipo != null && cmbFiltroTipo.Items.Count > 0) cmbFiltroTipo.SelectedIndex = 0;
             if (cmbFiltroStatus != null && cmbFiltroStatus.Items.Count > 0) cmbFiltroStatus.SelectedIndex = 0;
-            // Do not activate the period filters when clearing: uncheck the date pickers
             if (dtpFiltroInicio != null && dtpFiltroInicio.ShowCheckBox) dtpFiltroInicio.Checked = false;
             if (dtpFiltroFim != null && dtpFiltroFim.ShowCheckBox) dtpFiltroFim.Checked = false;
             currentPage = 1;
             RefreshGrid();
         }
-
+        #endregion
     }
 }
