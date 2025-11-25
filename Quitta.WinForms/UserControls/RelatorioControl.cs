@@ -117,7 +117,7 @@ namespace Quitta.UserControls
 
         private void BtnExportPdf_Click(object? sender, EventArgs e)
         {
-            // export PDF with chart image and table
+            // export PDF with new chart rendering and improved table visuals
             if (filteredItems == null || filteredItems.Count == 0)
             {
                 MessageBox.Show("Nenhum item para exportar.", "Exportar PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -135,30 +135,19 @@ namespace Quitta.UserControls
 
                 try
                 {
-                    // render chart at a larger size to make it legible in PDF
-                    var originalSize = chartStatus.Size;
-                    // render at reasonable high resolution
-                    var renderWidth = 1200;
-                    var renderHeight = Math.Max(480, originalSize.Height * renderWidth / Math.Max(1, originalSize.Width));
-                    Bitmap bmp;
-                    try
-                    {
-                        chartStatus.Size = new Size(renderWidth, renderHeight);
-                        bmp = new Bitmap(renderWidth, renderHeight);
-                        chartStatus.DrawToBitmap(bmp, new Rectangle(0, 0, renderWidth, renderHeight));
-                    }
-                    finally
-                    {
-                        chartStatus.Size = originalSize;
-                    }
+                    // build chart bitmap from data (larger size for clarity)
+                    int chartW = 800;
+                    int chartH = 480;
+                    using var chartBmp = DrawPdfChart(filteredItems, chartW, chartH);
 
                     using (var imgStream = new MemoryStream())
                     {
-                        bmp.Save(imgStream, ImageFormat.Png);
+                        chartBmp.Save(imgStream, ImageFormat.Png);
                         imgStream.Position = 0;
 
                         using (var pdf = new PdfDocument())
                         {
+                            int pageNumber = 1;
                             var page = pdf.AddPage();
                             page.Size = PdfSharpCore.PageSize.A4;
                             var gfx = XGraphics.FromPdfPage(page);
@@ -170,13 +159,12 @@ namespace Quitta.UserControls
                             double margin = 40;
                             double y = 30;
 
-                            gfx.DrawString("Relatório", titleFont, XBrushes.Black, new XRect(margin, y, page.Width - margin * 2, 24), XStringFormats.TopLeft);
-
-                            // generation timestamp
+                            // Title
+                            gfx.DrawString("Relatório Quitta", titleFont, XBrushes.Black, new XRect(margin, y, page.Width - margin * 2, 24), XStringFormats.TopLeft);
                             var genText = "Gerado em: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
-                            gfx.DrawString(genText, font, XBrushes.Gray, new XRect(margin, y + 20, page.Width - margin * 2, 18), XStringFormats.TopLeft);
 
-                            y += 44;
+                            // bring content a bit closer under the title
+                            y += 28;
 
                             // draw stats block
                             gfx.DrawString($"Total Geral: {lblTotalValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
@@ -192,9 +180,9 @@ namespace Quitta.UserControls
                             gfx.DrawString(lblOverdueCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
 
                             // space before chart
-                            y += 28;
+                            y += 12; // reduced to bring table closer
 
-                            // draw chart full width (below stats)
+                            // draw chart centered
                             using (var ximg = XImage.FromStream(() => new MemoryStream(imgStream.ToArray())))
                             {
                                 double maxImgWidth = page.Width - margin * 2;
@@ -203,11 +191,11 @@ namespace Quitta.UserControls
                                 double imgX = margin + (maxImgWidth - imgWidth) / 2;
                                 double imgY = y;
                                 gfx.DrawImage(ximg, imgX, imgY, imgWidth, imgHeight);
-                                y = imgY + imgHeight + 12;
+                                y = imgY + imgHeight + 8; // smaller gap
                             }
 
-                            // table header
-                            double tableTop = y + 6;
+                            // table header parameters (closer to chart)
+                            double tableTop = y + 4;
                             double colLeft = margin;
                             double tableWidth = page.Width - margin * 2;
 
@@ -218,46 +206,71 @@ namespace Quitta.UserControls
                             double wValor = tableWidth * 0.14;
                             double wStatus = tableWidth * 0.14;
 
-                            double x = colLeft;
-
-                            // header background
-                            gfx.DrawRectangle(XBrushes.LightGray, x, tableTop, wTipo + wNumero + wFornecedor + wVenc + wValor + wStatus, 18);
-
-                            gfx.DrawRectangle(XPens.Black, x, tableTop, wTipo, 18);
-                            gfx.DrawString("Tipo", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wTipo - 4, 14), XStringFormats.TopLeft); x += wTipo;
-                            gfx.DrawRectangle(XPens.Black, x, tableTop, wNumero, 18);
-                            gfx.DrawString("Número", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wNumero - 4, 14), XStringFormats.TopLeft); x += wNumero;
-                            gfx.DrawRectangle(XPens.Black, x, tableTop, wFornecedor, 18);
-                            gfx.DrawString("Fornecedor", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wFornecedor - 4, 14), XStringFormats.TopLeft); x += wFornecedor;
-                            gfx.DrawRectangle(XPens.Black, x, tableTop, wVenc, 18);
-                            gfx.DrawString("Vencimento", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wVenc - 4, 14), XStringFormats.TopLeft); x += wVenc;
-                            gfx.DrawRectangle(XPens.Black, x, tableTop, wValor, 18);
-                            gfx.DrawString("Valor", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wValor - 4, 14), XStringFormats.TopLeft); x += wValor;
-                            gfx.DrawRectangle(XPens.Black, x, tableTop, wStatus, 18);
-                            gfx.DrawString("Status", headerFont, XBrushes.Black, new XRect(x + 2, tableTop + 2, wStatus - 4, 14), XStringFormats.TopLeft);
+                            // draw header on first page
+                            DrawTableHeader(gfx, colLeft, tableTop, new double[] { wTipo, wNumero, wFornecedor, wVenc, wValor, wStatus }, headerFont);
 
                             double rowY = tableTop + 18;
                             double lineHeight = 14;
 
+                            int rowIndex = 0;
+
                             foreach (var it in filteredItems)
                             {
+                                // start new page if needed
                                 if (rowY + lineHeight > page.Height - margin)
                                 {
+                                    // draw footer for current page (with page number)
+                                    DrawFooter(gfx, page, genText, pageNumber);
+                                    // start new page
+                                    pageNumber++;
                                     page = pdf.AddPage();
+                                    page.Size = PdfSharpCore.PageSize.A4;
                                     gfx = XGraphics.FromPdfPage(page);
-                                    rowY = margin;
+                                    // draw header on new page
+                                    DrawTableHeader(gfx, colLeft, margin, new double[] { wTipo, wNumero, wFornecedor, wVenc, wValor, wStatus }, headerFont);
+                                    rowY = margin + 18;
                                 }
 
-                                x = colLeft;
-                                gfx.DrawRectangle(XPens.Black, x, rowY, wTipo, lineHeight); gfx.DrawString(it.Tipo.ToString(), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wTipo - 4, lineHeight), XStringFormats.TopLeft); x += wTipo;
-                                gfx.DrawRectangle(XPens.Black, x, rowY, wNumero, lineHeight); gfx.DrawString(it.Numero, font, XBrushes.Black, new XRect(x + 2, rowY + 1, wNumero - 4, lineHeight), XStringFormats.TopLeft); x += wNumero;
-                                gfx.DrawRectangle(XPens.Black, x, rowY, wFornecedor, lineHeight); gfx.DrawString(it.Fornecedor, font, XBrushes.Black, new XRect(x + 2, rowY + 1, wFornecedor - 4, lineHeight), XStringFormats.TopLeft); x += wFornecedor;
-                                gfx.DrawRectangle(XPens.Black, x, rowY, wVenc, lineHeight); gfx.DrawString(it.Vencimento.ToString("dd/MM/yyyy"), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wVenc - 4, lineHeight), XStringFormats.TopLeft); x += wVenc;
-                                gfx.DrawRectangle(XPens.Black, x, rowY, wValor, lineHeight); gfx.DrawString(it.Valor.ToString("C"), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wValor - 4, lineHeight), XStringFormats.TopLeft); x += wValor;
-                                gfx.DrawRectangle(XPens.Black, x, rowY, wStatus, lineHeight); gfx.DrawString(it.Status.ToString(), font, XBrushes.Black, new XRect(x + 2, rowY + 1, wStatus - 4, lineHeight), XStringFormats.TopLeft);
+                                // alternating row shading
+                                double x = colLeft;
+                                var brush = (rowIndex % 2 == 0) ? XBrushes.White : new XSolidBrush(XColor.FromArgb(245, 245, 245));
 
-                                rowY += lineHeight + 4;
+                                gfx.DrawRectangle(brush, x, rowY, wTipo, lineHeight);
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wTipo, lineHeight);
+                                gfx.DrawString(it.Tipo.ToString(), font, XBrushes.Black, new XRect(x + 4, rowY + 1, wTipo - 8, lineHeight), XStringFormats.TopLeft);
+                                x += wTipo;
+
+                                gfx.DrawRectangle(brush, x, rowY, wNumero, lineHeight);
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wNumero, lineHeight);
+                                gfx.DrawString(it.Numero, font, XBrushes.Black, new XRect(x + 4, rowY + 1, wNumero - 8, lineHeight), XStringFormats.TopLeft);
+                                x += wNumero;
+
+                                gfx.DrawRectangle(brush, x, rowY, wFornecedor, lineHeight);
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wFornecedor, lineHeight);
+                                gfx.DrawString(it.Fornecedor, font, XBrushes.Black, new XRect(x + 4, rowY + 1, wFornecedor - 8, lineHeight), XStringFormats.TopLeft);
+                                x += wFornecedor;
+
+                                gfx.DrawRectangle(brush, x, rowY, wVenc, lineHeight);
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wVenc, lineHeight);
+                                gfx.DrawString(it.Vencimento.ToString("dd/MM/yyyy"), font, XBrushes.Black, new XRect(x + 4, rowY + 1, wVenc - 8, lineHeight), XStringFormats.TopLeft);
+                                x += wVenc;
+
+                                gfx.DrawRectangle(brush, x, rowY, wValor, lineHeight);
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wValor, lineHeight);
+                                gfx.DrawString(it.Valor.ToString("C"), font, XBrushes.Black, new XRect(x + 4, rowY + 1, wValor - 8, lineHeight), XStringFormats.TopLeft);
+                                x += wValor;
+
+                                gfx.DrawRectangle(brush, x, rowY, wStatus, lineHeight);
+                                gfx.DrawRectangle(XPens.Black, x, rowY, wStatus, lineHeight);
+                                gfx.DrawString(it.Status.ToString(), font, XBrushes.Black, new XRect(x + 4, rowY + 1, wStatus - 8, lineHeight), XStringFormats.TopLeft);
+
+                                // no extra spacing between rows
+                                rowY += lineHeight;
+                                rowIndex++;
                             }
+
+                            // draw footer for last page with page number
+                            DrawFooter(gfx, page, genText, pageNumber);
 
                             // save PDF
                             using (var fs = File.OpenWrite(sfd.FileName))
@@ -275,6 +288,114 @@ namespace Quitta.UserControls
                     MessageBox.Show($"Erro ao exportar PDF: {ex.Message}", "Exportar PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        // Draws a pie chart (by amount) representing statuses and returns a Bitmap
+        private Bitmap DrawPdfChart(List<Item> items, int width, int height)
+        {
+            var bmp = new Bitmap(width, height);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Color.White);
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                // compute sums by status
+                var groups = items.GroupBy(i => i.Status)
+                    .Select(gp => new { Status = gp.Key, Total = gp.Sum(x => x.Valor) })
+                    .OrderBy(gp => gp.Status)
+                    .ToList();
+
+                decimal total = groups.Sum(g => g.Total);
+                if (total <= 0)
+                {
+                    using var f = new Font("Segoe UI", 12);
+                    var txt = "Sem dados";
+                    var sz = g.MeasureString(txt, f);
+                    g.DrawString(txt, f, Brushes.Gray, (width - sz.Width) / 2, (height - sz.Height) / 2);
+                    return bmp;
+                }
+
+                // pie rect
+                int pieSize = Math.Min(width, height) - 200;
+                var pieRect = new Rectangle(20, 20, pieSize, pieSize);
+
+                float startAngle = 0f;
+                foreach (var grp in groups)
+                {
+                    float sweep = (float)(grp.Total / total) * 360f;
+                    Brush brush = Brushes.Gray;
+                    switch (grp.Status)
+                    {
+                        case StatusItem.Pendente: brush = Brushes.Gold; break;
+                        case StatusItem.Pago: brush = Brushes.Green; break;
+                        case StatusItem.Vencido: brush = Brushes.Red; break;
+                    }
+                    g.FillPie(brush, pieRect, startAngle, sweep);
+                    g.DrawPie(Pens.Black, pieRect, startAngle, sweep);
+                    startAngle += sweep;
+                }
+
+                // legend on right
+                int lx = pieRect.Right + 20;
+                int box = 18;
+                using var legendFont = new Font("Segoe UI", 10);
+                // center legend vertically relative to pie
+                int totalLegendHeight = groups.Count * (box + 8) - 8;
+                int startLy = pieRect.Top + (pieRect.Height - totalLegendHeight) / 2;
+                int ly = startLy;
+                foreach (var grp in groups)
+                {
+                    Brush brush = Brushes.Gray;
+                    switch (grp.Status)
+                    {
+                        case StatusItem.Pendente: brush = Brushes.Gold; break;
+                        case StatusItem.Pago: brush = Brushes.Green; break;
+                        case StatusItem.Vencido: brush = Brushes.Red; break;
+                    }
+                    g.FillRectangle(brush, lx, ly, box, box);
+                    g.DrawRectangle(Pens.Black, lx, ly, box, box);
+                    var text = $"{grp.Status} - {grp.Total.ToString("C")}";
+                    g.DrawString(text, legendFont, Brushes.Black, lx + box + 8, ly);
+                    ly += box + 8;
+                }
+            }
+
+            return bmp;
+        }
+
+        // Draw table header at given position
+        private void DrawTableHeader(XGraphics gfx, double colLeft, double tableTop, double[] widths, XFont headerFont)
+        {
+            double x = colLeft;
+            double h = 18;
+            double totalW = widths.Sum();
+
+            // header background
+            gfx.DrawRectangle(XBrushes.LightGray, x, tableTop, totalW, h);
+
+            // columns
+            gfx.DrawRectangle(XPens.Black, x, tableTop, widths[0], h);
+            gfx.DrawString("Tipo", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[0] - 8, h), XStringFormats.TopLeft);
+            x += widths[0];
+
+            gfx.DrawRectangle(XPens.Black, x, tableTop, widths[1], h);
+            gfx.DrawString("Número", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[1] - 8, h), XStringFormats.TopLeft);
+            x += widths[1];
+
+            gfx.DrawRectangle(XPens.Black, x, tableTop, widths[2], h);
+            gfx.DrawString("Fornecedor", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[2] - 8, h), XStringFormats.TopLeft);
+            x += widths[2];
+
+            gfx.DrawRectangle(XPens.Black, x, tableTop, widths[3], h);
+            gfx.DrawString("Vencimento", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[3] - 8, h), XStringFormats.TopLeft);
+            x += widths[3];
+
+            gfx.DrawRectangle(XPens.Black, x, tableTop, widths[4], h);
+            gfx.DrawString("Valor", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[4] - 8, h), XStringFormats.TopLeft);
+            x += widths[4];
+
+            gfx.DrawRectangle(XPens.Black, x, tableTop, widths[5], h);
+            gfx.DrawString("Status", headerFont, XBrushes.Black, new XRect(x + 4, tableTop + 2, widths[5] - 8, h), XStringFormats.TopLeft);
         }
 
         private void BtnExportExcel_Click(object? sender, EventArgs e)
@@ -580,6 +701,21 @@ namespace Quitta.UserControls
 
             if (lblOverdueValue != null) lblOverdueValue.Text = overdue.Sum(i => i.Valor).ToString("C");
             if (lblOverdueCount != null) lblOverdueCount.Text = overdue.Count + " itens";
+        }
+
+        // Draw footer with page number and generation date
+        private void DrawFooter(XGraphics gfx, PdfPage page, string genText, int pageNumber)
+        {
+            var footerFont = new XFont("Segoe UI", 9, XFontStyle.Regular);
+            double margin = 40;
+            double y = page.Height - 30;
+            // draw a line above footer
+            gfx.DrawLine(XPens.LightGray, margin, y - 8, page.Width - margin, y - 8);
+            // left: generation timestamp
+            gfx.DrawString(genText, footerFont, XBrushes.Gray, new XRect(margin, y - 4, 300, 18), XStringFormats.TopLeft);
+            // right: page number
+            var pageText = $"Página {pageNumber}";
+            gfx.DrawString(pageText, footerFont, XBrushes.Gray, new XRect(margin, y - 4, page.Width - margin * 2, 18), XStringFormats.TopRight);
         }
     }
 }

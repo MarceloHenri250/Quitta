@@ -243,7 +243,10 @@ namespace Quitta.UserControls
                         g.DrawString(countStr1, fontLabel, Brushes.Black, rect1.X + rect1.Width / 2, countY1, sfCenter);
                         g.DrawString(countStr2, fontLabel, Brushes.Black, rect2.X + rect2.Width / 2, countY2, sfCenter);
 
-                        // month label removed to reduce clutter
+                        // draw month label under each group for clarity
+                        var monthLabel = meses[i].ToString("MMM");
+                        int monthLabelY = (targetHeight - legendHeight) - 6; // just above legend area
+                        g.DrawString(monthLabel, fontLabel, Brushes.Gray, groupX, monthLabelY, sfCenter);
                     }
 
                     // draw legend area (only labels)
