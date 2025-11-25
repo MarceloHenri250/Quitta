@@ -164,14 +164,28 @@ namespace Quitta.UserControls
 
         private void BtnRestoreDefaults_Click(object sender, EventArgs e)
         {
+            // Preserve backup-related settings so we don't accidentally delete or change user backups
+            var preservedBackupPath = Properties.Settings.Default.BackupPath;
+            var preservedKeepLast = Properties.Settings.Default.KeepLastBackups;
+
             // Restaurar padrões simples
             Properties.Settings.Default.Reset();
+
+            // Restore backup-specific values that should not be overwritten by reset
+            Properties.Settings.Default.BackupPath = preservedBackupPath;
+            Properties.Settings.Default.KeepLastBackups = preservedKeepLast;
+
+            // Ensure settings are saved and UI updated
+            Properties.Settings.Default.Save();
+
             LoadSettingsToControls();
             UpdateLastBackupLabel();
+
+            // Restart services
             Quitta.Services.BackupManager.Instance.Restart();
-            // Restart notification manager
             Quitta.Services.NotificationManager.Instance.InitializeFromSettings();
-            MessageBox.Show("Padrões restaurados.", "Restaurar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            MessageBox.Show("Padrões restaurados (configurações de backup preservadas).", "Restaurar", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

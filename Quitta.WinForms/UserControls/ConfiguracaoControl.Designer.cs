@@ -30,10 +30,6 @@
         private System.Windows.Forms.NumericUpDown nudCustomStartYear;
         private System.Windows.Forms.NumericUpDown nudCustomEndYear;
 
-        // Reports
-        private System.Windows.Forms.TabPage tabReports;
-        private System.Windows.Forms.Label lblReportsSoon;
-
         // Notifications
         private System.Windows.Forms.TabPage tabNotifications;
         private System.Windows.Forms.CheckBox chkEnableNotifications;
@@ -88,8 +84,6 @@
             nudCustomStartYear = new NumericUpDown();
             lblEnd = new Label();
             nudCustomEndYear = new NumericUpDown();
-            tabReports = new TabPage();
-            lblReportsSoon = new Label();
             tabNotifications = new TabPage();
             chkEnableNotifications = new CheckBox();
             lblAdv = new Label();
@@ -103,7 +97,6 @@
             tabBudget.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nudCustomStartYear).BeginInit();
             ((System.ComponentModel.ISupportInitialize)nudCustomEndYear).BeginInit();
-            tabReports.SuspendLayout();
             tabNotifications.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nudNotificationAdvanceDays).BeginInit();
             SuspendLayout();
@@ -112,7 +105,6 @@
             // 
             tabControl.Controls.Add(tabBackup);
             tabControl.Controls.Add(tabBudget);
-            tabControl.Controls.Add(tabReports);
             tabControl.Controls.Add(tabNotifications);
             tabControl.Location = new Point(10, 10);
             tabControl.Name = "tabControl";
@@ -337,25 +329,6 @@
             nudCustomEndYear.TabIndex = 9;
             nudCustomEndYear.Value = new decimal(new int[] { 2025, 0, 0, 0 });
             // 
-            // tabReports
-            // 
-            tabReports.Controls.Add(lblReportsSoon);
-            tabReports.Enabled = false;
-            tabReports.Location = new Point(4, 29);
-            tabReports.Name = "tabReports";
-            tabReports.Size = new Size(672, 407);
-            tabReports.TabIndex = 2;
-            tabReports.Text = "Relatórios";
-            // 
-            // lblReportsSoon
-            // 
-            lblReportsSoon.AutoSize = true;
-            lblReportsSoon.Location = new Point(15, 15);
-            lblReportsSoon.Name = "lblReportsSoon";
-            lblReportsSoon.Size = new Size(80, 20);
-            lblReportsSoon.TabIndex = 0;
-            lblReportsSoon.Text = "Em breve...";
-            // 
             // tabNotifications
             // 
             tabNotifications.Controls.Add(chkEnableNotifications);
@@ -441,8 +414,6 @@
             tabBudget.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)nudCustomStartYear).EndInit();
             ((System.ComponentModel.ISupportInitialize)nudCustomEndYear).EndInit();
-            tabReports.ResumeLayout(false);
-            tabReports.PerformLayout();
             tabNotifications.ResumeLayout(false);
             tabNotifications.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)nudNotificationAdvanceDays).EndInit();
