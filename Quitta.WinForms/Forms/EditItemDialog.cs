@@ -1,15 +1,6 @@
 ﻿using Quitta.Models;
 using Quitta.Services;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 //TODO: colocar os componentes no designer ao inves de estarem todos no codigo
 
@@ -49,7 +40,21 @@ namespace Quitta.Forms
 
             txtNumero.Text = item.Numero;
             txtFornecedor.Text = item.Fornecedor;
-            numValor.Value = item.Valor;
+
+            // Ensure the numeric control can accept the item's value: clamp to Min/Max to avoid ArgumentOutOfRangeException
+            try
+            {
+                decimal valueToSet = item.Valor;
+                if (valueToSet < numValor.Minimum) valueToSet = numValor.Minimum;
+                if (valueToSet > numValor.Maximum) valueToSet = numValor.Maximum;
+                numValor.Value = valueToSet;
+            }
+            catch
+            {
+                // fallback: set to minimum if anything unexpected happens
+                try { numValor.Value = numValor.Minimum; } catch { }
+            }
+
             dtpVencimento.Value = item.Vencimento;
 
             // populate status combobox with enum values (designer had strings)
