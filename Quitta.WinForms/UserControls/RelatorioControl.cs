@@ -166,18 +166,67 @@ namespace Quitta.UserControls
                             // bring content a bit closer under the title
                             y += 28;
 
-                            // draw stats block
-                            gfx.DrawString($"Total Geral: {lblTotalValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
-                            gfx.DrawString(lblTotalCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
-                            y += 16;
-                            gfx.DrawString($"A Pagar: {lblToPayValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
-                            gfx.DrawString(lblToPayCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
-                            y += 16;
-                            gfx.DrawString($"Pagos: {lblPaidValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
-                            gfx.DrawString(lblPaidCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
-                            y += 16;
-                            gfx.DrawString($"Vencidos: {lblOverdueValue.Text}", font, XBrushes.Black, new XPoint(margin, y));
-                            gfx.DrawString(lblOverdueCount?.Text ?? "", font, XBrushes.Black, new XPoint(margin + 260, y));
+                            // draw stats as visually distinct panels (Total, A Pagar, Pagos, Vencidos)
+                            // compute values directly from filteredItems to ensure consistency
+                            decimal totalAmount = filteredItems.Sum(i => i.Valor);
+                            var toPayList = filteredItems.Where(i => i.Status == StatusItem.Pendente).ToList();
+                            var paidList = filteredItems.Where(i => i.Status == StatusItem.Pago).ToList();
+                            var overdueList = filteredItems.Where(i => i.Status == StatusItem.Vencido).ToList();
+
+                            var stats = new[]
+                            {
+                                new { Title = "Total Geral", Amount = totalAmount, Count = filteredItems.Count, Color = XColors.DimGray },
+                                new { Title = "A Pagar", Amount = toPayList.Sum(i=>i.Valor), Count = toPayList.Count, Color = XColors.Gold },
+                                new { Title = "Pagos", Amount = paidList.Sum(i=>i.Valor), Count = paidList.Count, Color = XColors.Green },
+                                new { Title = "Vencidos", Amount = overdueList.Sum(i=>i.Valor), Count = overdueList.Count, Color = XColors.Red }
+                            };
+
+                            // add extra space under title
+                            y += 14;
+
+                            double panelSpacing = 10;
+                            int panelCount = stats.Length;
+                            double panelWidth = (page.Width - margin * 2 - panelSpacing * (panelCount - 1)) / panelCount;
+                            double panelHeight = 64; // increased to fit amount + count stacked
+                            double px = margin;
+
+                            var amountFont = new XFont("Segoe UI", 12, XFontStyle.Bold);
+                            var titleSmallFont = new XFont("Segoe UI", 9, XFontStyle.Bold);
+                            var smallFont = new XFont("Segoe UI", 9, XFontStyle.Regular);
+
+                            for (int i = 0; i < stats.Length; i++)
+                            {
+                                var s = stats[i];
+                                // soft background tint based on status color
+                                var bgColor = XColor.FromArgb(40, s.Color.R, s.Color.G, s.Color.B);
+                                var bgBrush = new XSolidBrush(bgColor);
+                                var borderPen = new XPen(XColors.LightGray);
+
+                                // background panel
+                                gfx.DrawRectangle(borderPen, bgBrush, px, y, panelWidth, panelHeight);
+
+                                // colored marker square
+                                double markerSize = 14;
+                                double markerX = px + 10;
+                                double markerY = y + (panelHeight - markerSize) / 2;
+                                gfx.DrawRectangle(new XPen(XColors.Gray), new XSolidBrush(s.Color), markerX, markerY, markerSize, markerSize);
+
+                                // title
+                                double textX = markerX + markerSize + 8;
+                                gfx.DrawString(s.Title, titleSmallFont, XBrushes.Gray, new XRect(textX, y + 8, panelWidth - (textX - px) - 12, 12), XStringFormats.TopLeft);
+
+                                // amount (prominent)
+                                gfx.DrawString(s.Amount.ToString("C"), amountFont, XBrushes.Black, new XRect(textX, y + 22, panelWidth - (textX - px) - 12, 26), XStringFormats.TopLeft);
+
+                                // count below amount (centered horizontally in remaining area)
+                                var countText = s.Count + " itens";
+                                gfx.DrawString(countText, smallFont, XBrushes.DarkGray, new XRect(textX, y + 44, panelWidth - (textX - px) - 12, 12), XStringFormats.TopLeft);
+
+                                px += panelWidth + panelSpacing;
+                            }
+
+                            // advance y below panels
+                            y += panelHeight + 12;
 
                             // space before chart
                             y += 12; // reduced to bring table closer
