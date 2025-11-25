@@ -51,10 +51,78 @@ namespace Quitta.Forms
             txtFornecedor.Text = item.Fornecedor;
             numValor.Value = item.Valor;
             dtpVencimento.Value = item.Vencimento;
-            cmbStatus.SelectedItem = item.Status.ToString();
+
+            // populate status combobox with enum values (designer had strings)
+            try
+            {
+                // set up options based on vencimento
+                UpdateStatusOptions();
+                // ensure current status is selected when allowed
+                if (cmbStatus.DataSource is List<StatusItem> list && list.Contains(item.Status))
+                    cmbStatus.SelectedItem = item.Status;
+            }
+            catch
+            {
+                // fallback: leave as-is
+                try
+                {
+                    cmbStatus.DataSource = Enum.GetValues(typeof(StatusItem));
+                    cmbStatus.SelectedItem = item.Status;
+                }
+                catch
+                {
+                    if (!string.IsNullOrEmpty(item.Status.ToString()))
+                    {
+                        cmbStatus.Items.Clear();
+                        cmbStatus.Items.Add(item.Status.ToString());
+                        cmbStatus.SelectedIndex = 0;
+                    }
+                }
+            }
+
+            // subscribe to vencimento changes to update allowed statuses
+            dtpVencimento.ValueChanged += DtpVencimento_ValueChanged;
 
             // populate attachment UI
             UpdateAttachmentUI();
+        }
+
+        private void UpdateStatusOptions()
+        {
+            // remove 'Pendente' option when vencimento is <= today
+            var today = DateTime.Now.Date;
+            var allowed = Enum.GetValues(typeof(StatusItem)).Cast<StatusItem>()
+                .Where(s => !(s == StatusItem.Pendente && dtpVencimento.Value.Date <= today))
+                .ToList();
+
+            // bind to combobox
+            cmbStatus.DataSource = null;
+            cmbStatus.DataSource = allowed;
+
+            // if current edited status is not allowed, pick a sensible fallback (Vencido if present, else first)
+            if (!allowed.Contains(EditedItem.Status))
+            {
+                if (allowed.Contains(StatusItem.Vencido))
+                    cmbStatus.SelectedItem = StatusItem.Vencido;
+                else if (allowed.Count > 0)
+                    cmbStatus.SelectedItem = allowed[0];
+            }
+            else
+            {
+                cmbStatus.SelectedItem = EditedItem.Status;
+            }
+        }
+
+        private void DtpVencimento_ValueChanged(object? sender, EventArgs e)
+        {
+            try
+            {
+                UpdateStatusOptions();
+            }
+            catch
+            {
+                // swallow
+            }
         }
 
         private void UpdateAttachmentUI()
@@ -94,11 +162,21 @@ namespace Quitta.Forms
 
         private void BtnReplaceAnexo_Click(object? sender, EventArgs e)
         {
+            // allowed extensions same as cadastro/ListagemControl
+            var allowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
+
             using var ofd = new OpenFileDialog();
             ofd.Title = "Selecionar anexo";
-            ofd.Filter = "Todos os arquivos (*.*)|*.*";
+            ofd.Filter = "PDF (*.pdf)|*.pdf|Imagens (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|Todos os arquivos (*.*)|*.*";
             if (ofd.ShowDialog() == DialogResult.OK)
             {
+                var ext = Path.GetExtension(ofd.FileName) ?? string.Empty;
+                if (!allowedExts.Contains(ext.ToLowerInvariant()))
+                {
+                    MessageBox.Show("Formato de arquivo inválido. São permitidos: PDF, JPG e PNG.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 var dest = dataService.GetAttachmentPath(Path.GetFileName(ofd.FileName));
                 dest = dataService.GetUniqueAttachmentPath(dest);
                 try
@@ -179,11 +257,33 @@ namespace Quitta.Forms
                 EditedItem.Fornecedor = txtFornecedor.Text;
                 EditedItem.Valor = numValor.Value;
                 EditedItem.Vencimento = dtpVencimento.Value.Date;
-                EditedItem.Status = (StatusItem)Enum.Parse(typeof(StatusItem), cmbStatus.SelectedItem.ToString());
+
+                // robust parsing of selected status (combo is bound to enum)
+                StatusItem selectedStatus;
+                if (cmbStatus.SelectedItem is StatusItem s)
+                    selectedStatus = s;
+                else if (cmbStatus.SelectedItem != null && Enum.TryParse<StatusItem>(cmbStatus.SelectedItem.ToString(), out var parsed))
+                    selectedStatus = parsed;
+                else
+                    selectedStatus = EditedItem.Status;
+
+                // if item is overdue and selected status is Pendente, force to Vencido (safety)
+                if (selectedStatus == StatusItem.Pendente && EditedItem.Vencimento.Date <= DateTime.Now.Date)
+                {
+                    selectedStatus = StatusItem.Vencido;
+                }
+
+                EditedItem.Status = selectedStatus;
 
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
+        }
+
+        private void BtnCancelar_Click(object? sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
         }
     }
 }

@@ -103,7 +103,7 @@ namespace Quitta.Forms
             btnReplaceAnexo.Click += BtnReplaceAnexo_Click;
             btnRemoveAnexo.Click += BtnRemoveAnexo_Click;
             btnSalvar.Click += btnSalvar_Click;
-            btnCancelar.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
+            btnCancelar.Click += BtnCancelar_Click;
 
             // add to form
             this.Controls.Add(lblTipo);
